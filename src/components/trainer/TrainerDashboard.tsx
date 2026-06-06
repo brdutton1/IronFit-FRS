@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import AppShell from '@/components/common/AppShell';
+import TrainerWelcome from './TrainerWelcome';
 import { useAuth } from '@/lib/session';
 import { listClients } from '@/lib/supabase/clients';
 import { listTrainerMovements } from '@/lib/supabase/movements';
@@ -22,6 +23,7 @@ export default function TrainerDashboard() {
   const [movements, setMovements] = useState<Movement[]>([]);
   const [attempts, setAttempts] = useState<ClientAttempt[]>([]);
   const [error, setError] = useState<string | null>(null);
+  const [dismissedWelcome, setDismissedWelcome] = useState(false);
 
   useEffect(() => {
     if (!profile) return;
@@ -55,6 +57,11 @@ export default function TrainerDashboard() {
 
   const attentionCount = rows.filter((r) => r.signals.needsAttention).length;
 
+  // First login: walk the trainer through the basics + their intake link.
+  if (profile && !profile.onboarded_at && !dismissedWelcome) {
+    return <TrainerWelcome onDone={() => setDismissedWelcome(true)} />;
+  }
+
   return (
     <AppShell title="Clients">
       <header className="mb-5">
@@ -72,8 +79,9 @@ export default function TrainerDashboard() {
 
       {clients && clients.length === 0 && (
         <p className="card text-slate-400">
-          Clients appear here once they sign in. Share the app link — anyone who signs up joins your roster
-          automatically.
+          No clients yet. Share your intake link from{' '}
+          <Link to="/trainer/settings" className="font-semibold text-sky-300 hover:text-sky-200">Settings</Link> — anyone
+          who fills out your intake form joins your roster automatically.
         </p>
       )}
 

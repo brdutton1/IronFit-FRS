@@ -1,24 +1,38 @@
 import { useEffect, useState } from 'react';
 import AppShell from '@/components/common/AppShell';
 import MovementLibrary from './MovementLibrary';
+import ClientWelcome from './ClientWelcome';
 import { useAuth } from '@/lib/session';
 import { listLiveMovements } from '@/lib/supabase/movements';
+import { listClientProgram } from '@/lib/supabase/programs';
 import { mostRecentAttempt } from '@/lib/localHistory';
 import type { Movement } from '@/types/movement';
+import type { ProgramAssignment } from '@/types/program';
 import type { LocalAttempt } from '@/types/attempt';
 
 export default function ClientDashboard() {
   const { profile } = useAuth();
   const [movements, setMovements] = useState<Movement[] | null>(null);
+  const [program, setProgram] = useState<ProgramAssignment[]>([]);
   const [recent, setRecent] = useState<LocalAttempt | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [dismissedWelcome, setDismissedWelcome] = useState(false);
 
   useEffect(() => {
+    if (!profile) return;
     setRecent(mostRecentAttempt());
-    listLiveMovements()
-      .then(setMovements)
+    Promise.all([listLiveMovements(), listClientProgram(profile.user_id)])
+      .then(([m, p]) => {
+        setMovements(m);
+        setProgram(p);
+      })
       .catch((e) => setError(e.message));
-  }, []);
+  }, [profile]);
+
+  // First login: show the personalized welcome until dismissed.
+  if (profile && !profile.onboarded_at && !dismissedWelcome) {
+    return <ClientWelcome onDone={() => setDismissedWelcome(true)} />;
+  }
 
   const recentName = recent && movements?.find((m) => m.id === recent.movement_id)?.name;
 
@@ -43,7 +57,7 @@ export default function ClientDashboard() {
       {movements === null ? (
         <p className="text-slate-400">Loading movements…</p>
       ) : (
-        <MovementLibrary movements={movements} />
+        <MovementLibrary movements={movements} program={program} />
       )}
     </AppShell>
   );

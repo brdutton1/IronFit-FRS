@@ -1,6 +1,8 @@
 import { useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import type { JointName, Movement, MovementType } from '@/types/movement';
+import type { ProgramAssignment } from '@/types/program';
+import { focusMovements } from '@/lib/focus';
 import { ReferenceThumbnail } from './ReferenceThumbnail';
 
 const JOINT_CHIPS: { label: string; joints: JointName[] }[] = [
@@ -20,9 +22,17 @@ const TYPE_CHIPS: { label: string; value: MovementType }[] = [
   { label: 'Flow', value: 'flow' },
 ];
 
-export default function MovementLibrary({ movements }: { movements: Movement[] }) {
+export default function MovementLibrary({
+  movements,
+  program = [],
+}: {
+  movements: Movement[];
+  program?: ProgramAssignment[];
+}) {
   const [jointFilter, setJointFilter] = useState<string | null>(null);
   const [typeFilter, setTypeFilter] = useState<MovementType | null>(null);
+
+  const focus = useMemo(() => focusMovements(movements, program), [movements, program]);
 
   const filtered = useMemo(() => {
     return movements.filter((m) => {
@@ -35,6 +45,30 @@ export default function MovementLibrary({ movements }: { movements: Movement[] }
 
   return (
     <div>
+      {focus.length > 0 && (
+        <section className="mb-6">
+          <h3 className="mb-1 text-sm font-semibold text-sky-300">Your focus</h3>
+          <p className="mb-3 text-xs text-slate-400">Picked by your trainer — start here.</p>
+          <ul className="grid grid-cols-2 gap-3 sm:grid-cols-3">
+            {focus.map(({ movement: m, note }) => (
+              <li key={m.id}>
+                <Link
+                  to={`/client/movements/${m.id}`}
+                  className="group block overflow-hidden rounded-2xl border border-sky-700 bg-sky-950/20 hover:border-sky-500"
+                >
+                  <ReferenceThumbnail movement={m} />
+                  <span className="block p-3">
+                    <span className="block truncate text-sm font-semibold">{m.name}</span>
+                    <span className="block text-xs text-slate-400">{m.movement_type.toUpperCase()} · {m.side}</span>
+                    {note && <span className="mt-1 block text-xs text-sky-200">“{note}”</span>}
+                  </span>
+                </Link>
+              </li>
+            ))}
+          </ul>
+          <h3 className="mt-6 mb-2 text-sm font-semibold text-slate-300">Full library</h3>
+        </section>
+      )}
       <div className="mb-3 flex flex-wrap gap-2" role="group" aria-label="Filter by joint">
         {JOINT_CHIPS.map((c) => (
           <button

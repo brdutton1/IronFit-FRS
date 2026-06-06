@@ -15,6 +15,14 @@ export async function listTrainerMovements(trainerId: string): Promise<Movement[
   return (data ?? []) as Movement[];
 }
 
+/** Every movement across the practice (RLS: trainers only). Used to resolve
+ * movement names/labels in the shared overview and cross-roster client views. */
+export async function listAllMovements(): Promise<Movement[]> {
+  const { data, error } = await supabase.from(TABLE).select('*').order('name');
+  if (error) throw new Error(error.message);
+  return (data ?? []) as Movement[];
+}
+
 /** Live movements visible to a client (RLS restricts to their trainer). */
 export async function listLiveMovements(): Promise<Movement[]> {
   const { data, error } = await supabase

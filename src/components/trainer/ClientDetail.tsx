@@ -1,12 +1,14 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import AppShell from '@/components/common/AppShell';
 import Sparkline from '@/components/common/Sparkline';
 import { SignalChips } from './TrainerDashboard';
 import { useAuth } from '@/lib/session';
 import { getClientProfile } from '@/lib/supabase/clients';
+import { getClientIntake } from '@/lib/supabase/intake';
 import { listClientAttempts } from '@/lib/supabase/attempts';
-import { listTrainerMovements } from '@/lib/supabase/movements';
+import { listAllMovements } from '@/lib/supabase/movements';
+import { assignMovement, listClientProgram, unassignMovement, updateAssignmentNote } from '@/lib/supabase/programs';
 import {
   attentionSignals,
   recurringCompensations,
@@ -14,8 +16,9 @@ import {
   type MovementMeta,
 } from '@/lib/metrics';
 import { relativeTime } from '@/lib/time';
-import type { Profile } from '@/types/profile';
+import type { ClientIntake, Profile } from '@/types/profile';
 import type { Movement } from '@/types/movement';
+import type { ProgramAssignment } from '@/types/program';
 import type { ClientAttempt } from '@/types/attempt';
 
 const DIRECTION_LABEL: Record<string, string> = {
@@ -31,15 +34,30 @@ export default function ClientDetail() {
   const [client, setClient] = useState<Profile | null>(null);
   const [movements, setMovements] = useState<Movement[]>([]);
   const [attempts, setAttempts] = useState<ClientAttempt[]>([]);
+  const [intake, setIntake] = useState<ClientIntake | null>(null);
+  const [program, setProgram] = useState<ProgramAssignment[]>([]);
   const [error, setError] = useState<string | null>(null);
+
+  const reloadProgram = useCallback(() => {
+    if (!clientId) return;
+    listClientProgram(clientId).then(setProgram).catch((e) => setError(e.message));
+  }, [clientId]);
 
   useEffect(() => {
     if (!clientId || !profile) return;
-    Promise.all([getClientProfile(clientId), listTrainerMovements(profile.user_id), listClientAttempts(clientId)])
-      .then(([c, m, a]) => {
+    Promise.all([
+      getClientProfile(clientId),
+      listAllMovements(),
+      listClientAttempts(clientId),
+      getClientIntake(clientId),
+      listClientProgram(clientId),
+    ])
+      .then(([c, m, a, i, p]) => {
         setClient(c);
         setMovements(m);
         setAttempts(a);
+        setIntake(i);
+        setProgram(p);
       })
       .catch((e) => setError(e.message));
   }, [clientId, profile]);
@@ -55,6 +73,31 @@ export default function ClientDetail() {
   );
   const trends = useMemo(() => romTrendByMovement(attempts, movementsById), [attempts, movementsById]);
   const recurring = useMemo(() => recurringCompensations(attempts, meta), [attempts, meta]);
+
+  // Only the owning trainer can set this client's focus.
+  const isOwner = !!client && client.trainer_id === profile?.user_id;
+  const ownerLiveMovements = useMemo(
+    () => movements.filter((m) => m.status === 'live' && m.trainer_id === client?.trainer_id),
+    [movements, client?.trainer_id],
+  );
+  const assignedIds = useMemo(() => new Set(program.map((p) => p.movement_id)), [program]);
+  const movementName = (id: string) => movementsById[id]?.name ?? 'Movement';
+
+  async function onAssign(movementId: string) {
+    if (!profile || !clientId || !movementId) return;
+    const { error } = await assignMovement(profile.user_id, clientId, movementId, null, program.length);
+    if (error) setError(error);
+    else reloadProgram();
+  }
+  async function onRemove(id: string) {
+    const { error } = await unassignMovement(id);
+    if (error) setError(error);
+    else reloadProgram();
+  }
+  async function onNote(id: string, note: string) {
+    const { error } = await updateAssignmentNote(id, note);
+    if (error) setError(error);
+  }
 
   if (error) return <AppShell><p role="alert" className="card border-red-700 text-red-300">{error}</p></AppShell>;
   if (!client || !signals) return <AppShell><p className="text-slate-400">Loading…</p></AppShell>;
@@ -75,6 +118,72 @@ export default function ClientDetail() {
           Message
         </Link>
       </div>
+
+      {intake && (intake.goals || intake.injuries || intake.experience || intake.phone || intake.emergency_contact) && (
+        <section className="card mb-4">
+          <h3 className="mb-2 font-semibold">Intake</h3>
+          <dl className="space-y-2 text-sm">
+            {intake.goals && (<div><dt className="text-slate-400">Goals</dt><dd className="text-slate-200">{intake.goals}</dd></div>)}
+            {intake.injuries && (<div><dt className="text-slate-400">Injuries / history</dt><dd className="text-slate-200">{intake.injuries}</dd></div>)}
+            {intake.experience && (<div><dt className="text-slate-400">Experience</dt><dd className="text-slate-200">{intake.experience}</dd></div>)}
+            {intake.phone && (<div><dt className="text-slate-400">Phone</dt><dd className="text-slate-200">{intake.phone}</dd></div>)}
+            {intake.emergency_contact && (<div><dt className="text-slate-400">Emergency contact</dt><dd className="text-slate-200">{intake.emergency_contact}</dd></div>)}
+          </dl>
+        </section>
+      )}
+
+      <section className="card mb-4">
+        <h3 className="mb-2 font-semibold">Your focus</h3>
+        {program.length === 0 ? (
+          <p className="text-sm text-slate-500">No focus movements pinned yet.</p>
+        ) : (
+          <ul className="space-y-2">
+            {program.map((p) => (
+              <li key={p.id} className="rounded-lg bg-slate-900/70 p-3">
+                <div className="flex items-center justify-between gap-2">
+                  <span className="text-sm font-medium">{movementName(p.movement_id)}</span>
+                  {isOwner && (
+                    <button type="button" onClick={() => void onRemove(p.id)} className="text-xs text-slate-400 hover:text-red-300">
+                      Remove
+                    </button>
+                  )}
+                </div>
+                {isOwner ? (
+                  <input
+                    defaultValue={p.note ?? ''}
+                    placeholder="Add a coaching note (optional)"
+                    onBlur={(e) => void onNote(p.id, e.target.value)}
+                    className="mt-2 w-full rounded-md border border-slate-700 bg-slate-950 px-2 py-1 text-sm text-slate-200"
+                  />
+                ) : (
+                  p.note && <p className="mt-1 text-sm text-sky-200">“{p.note}”</p>
+                )}
+              </li>
+            ))}
+          </ul>
+        )}
+
+        {isOwner && (
+          <label className="mt-3 block">
+            <span className="sr-only">Add a movement to focus</span>
+            <select
+              value=""
+              onChange={(e) => void onAssign(e.target.value)}
+              className="w-full rounded-md border border-slate-700 bg-slate-900 px-2 py-2 text-sm text-slate-200"
+            >
+              <option value="" disabled>+ Add a movement to focus…</option>
+              {ownerLiveMovements
+                .filter((m) => !assignedIds.has(m.id))
+                .map((m) => (
+                  <option key={m.id} value={m.id}>{m.name}</option>
+                ))}
+            </select>
+            {ownerLiveMovements.length === 0 && (
+              <span className="mt-1 block text-xs text-slate-500">Publish a movement first to pin it here.</span>
+            )}
+          </label>
+        )}
+      </section>
 
       {recurring.length > 0 && (
         <section className="card mb-4">

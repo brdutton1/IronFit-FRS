@@ -2,9 +2,12 @@ import { Navigate, Route, Routes } from 'react-router-dom';
 import AuthGate from '@/components/common/AuthGate';
 import MagicLinkForm from '@/components/common/MagicLinkForm';
 import TrainerDashboard from '@/components/trainer/TrainerDashboard';
+import TrainerSettings from '@/components/trainer/TrainerSettings';
+import OverviewDashboard from '@/components/trainer/OverviewDashboard';
 import MovementsLibrary from '@/components/trainer/MovementsLibrary';
 import MovementEditor from '@/components/trainer/MovementEditor';
 import ClientDetail from '@/components/trainer/ClientDetail';
+import IntakeForm from '@/components/intake/IntakeForm';
 import ClientDashboard from '@/components/client/ClientDashboard';
 import ProgressDashboard from '@/components/client/ProgressDashboard';
 import MovementDetail from '@/components/client/MovementDetail';
@@ -35,9 +38,12 @@ export default function App() {
     <Routes>
       <Route path="/" element={<IndexRedirect />} />
       <Route path="/auth" element={<AuthRoute />} />
+      <Route path="/intake/:code" element={<IntakeForm />} />
 
       {/* Trainer */}
       <Route path="/trainer" element={<AuthGate role="trainer"><TrainerDashboard /></AuthGate>} />
+      <Route path="/trainer/settings" element={<AuthGate role="trainer"><TrainerSettings /></AuthGate>} />
+      <Route path="/overview" element={<AuthGate role="trainer"><OverviewDashboard /></AuthGate>} />
       <Route path="/trainer/clients/:clientId" element={<AuthGate role="trainer"><ClientDetail /></AuthGate>} />
       <Route path="/trainer/movements" element={<AuthGate role="trainer"><MovementsLibrary /></AuthGate>} />
       <Route path="/trainer/movements/new" element={<AuthGate role="trainer"><MovementEditor /></AuthGate>} />

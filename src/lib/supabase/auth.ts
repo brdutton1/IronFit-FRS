@@ -25,6 +25,30 @@ export async function signUpWithPassword(
   return { error: error?.message ?? null, needsConfirm: !error && !data.session };
 }
 
+/**
+ * Create a CLIENT account from a trainer's intake link. The chosen trainer is
+ * carried in signup metadata; the `handle_new_user` trigger validates it and
+ * assigns the new client to that trainer. Returns the new user id so the caller
+ * can write the intake row once a session exists.
+ */
+export async function signUpClient(
+  email: string,
+  password: string,
+  displayName: string,
+  trainerId: string,
+): Promise<{ error: string | null; needsConfirm: boolean; userId: string | null }> {
+  const { data, error } = await supabase.auth.signUp({
+    email: email.trim(),
+    password,
+    options: { data: { display_name: displayName.trim(), trainer_id: trainerId } },
+  });
+  return {
+    error: error?.message ?? null,
+    needsConfirm: !error && !data.session,
+    userId: data.user?.id ?? null,
+  };
+}
+
 export async function signOut(): Promise<void> {
   await supabase.auth.signOut();
 }
@@ -67,5 +91,23 @@ export async function upsertOwnProfile(
   const { error } = await supabase
     .from('profiles')
     .upsert({ user_id: userId, ...fields }, { onConflict: 'user_id' });
+  return { error: error?.message ?? null };
+}
+
+/** Update a trainer's editable profile fields (contact info + client welcome). */
+export async function updateOwnProfile(
+  userId: string,
+  fields: Partial<Pick<Profile, 'display_name' | 'phone' | 'bio' | 'welcome_message'>>,
+): Promise<{ error: string | null }> {
+  const { error } = await supabase.from('profiles').update(fields).eq('user_id', userId);
+  return { error: error?.message ?? null };
+}
+
+/** Record that the user has seen their welcome screen (gates first-run). */
+export async function markOnboarded(userId: string): Promise<{ error: string | null }> {
+  const { error } = await supabase
+    .from('profiles')
+    .update({ onboarded_at: new Date().toISOString() })
+    .eq('user_id', userId);
   return { error: error?.message ?? null };
 }

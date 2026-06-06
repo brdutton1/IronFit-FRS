@@ -11,8 +11,10 @@ interface Tab {
 
 const TRAINER_TABS: Tab[] = [
   { to: '/trainer', label: 'Clients', icon: <IconUsers /> },
+  { to: '/overview', label: 'Overview', icon: <IconGrid /> },
   { to: '/trainer/movements', label: 'Movements', icon: <IconLibrary /> },
   { to: '/trainer/messages', label: 'Messages', icon: <IconChat /> },
+  { to: '/trainer/settings', label: 'Settings', icon: <IconGear /> },
 ];
 const CLIENT_TABS: Tab[] = [
   { to: '/client', label: 'Train', icon: <IconLibrary /> },
@@ -119,6 +121,24 @@ function IconChat() {
   return (
     <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true">
       <path d="M21 12a8 8 0 0 1-11.5 7.2L4 20l1-4.8A8 8 0 1 1 21 12z" />
+    </svg>
+  );
+}
+function IconGrid() {
+  return (
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true">
+      <rect x="3" y="3" width="8" height="5" rx="1" />
+      <rect x="3" y="11" width="8" height="10" rx="1" />
+      <rect x="14" y="3" width="7" height="10" rx="1" />
+      <rect x="14" y="16" width="7" height="5" rx="1" />
+    </svg>
+  );
+}
+function IconGear() {
+  return (
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true">
+      <circle cx="12" cy="12" r="3" />
+      <path d="M19.4 15a1.7 1.7 0 0 0 .3 1.9l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-2.9 1.2V21a2 2 0 1 1-4 0v-.1A1.7 1.7 0 0 0 7 19.4a1.7 1.7 0 0 0-1.9.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0-1.2-2.9H1a2 2 0 1 1 0-4h.1A1.7 1.7 0 0 0 2.6 7a1.7 1.7 0 0 0-.3-1.9l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.9.3H7a1.7 1.7 0 0 0 1-1.5V1a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 2.9 1.2 1.7 1.7 0 0 0 1.9-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.9V7a1.7 1.7 0 0 0 1.5 1H23a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z" />
     </svg>
   );
 }

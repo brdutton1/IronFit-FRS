@@ -12,7 +12,8 @@
     "test:watch": "vitest",
     "test:e2e": "playwright test",
     "lint": "eslint .",
-    "typecheck": "tsc -b --noEmit"
+    "typecheck": "tsc -b --noEmit",
+    "docs:pdf": "node scripts/build-guide-pdf.mjs"
   },
   "dependencies": {
     "@mediapipe/tasks-vision": "^0.10.14",
@@ -38,6 +39,7 @@
     "eslint-plugin-react-refresh": "^0.4.12",
     "globals": "^15.10.0",
     "jsdom": "^25.0.1",
+    "pdfkit": "^0.18.0",
     "postcss": "^8.4.47",
     "tailwindcss": "^3.4.13",
     "typescript": "^5.6.2",
