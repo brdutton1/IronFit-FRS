@@ -51,3 +51,28 @@ export const CAMERA_ANGLE_TOLERANCE_DEG = 30;
 // A stillness joint must stay over threshold for this many consecutive frames
 // before the banner fires, so a single jittery frame doesn't trigger an alert.
 export const COMPENSATION_DEBOUNCE_FRAMES = 3;
+
+// ── Dashboard "needs attention" signals (trainer/client metrics) ──
+// All derived from real session data only — no streaks/points/vanity. These are
+// proposed defaults for Lee to tune; see src/lib/metrics.ts.
+
+// Recurring compensation: a fault tag appearing in at least this fraction of the
+// client's most-recent attempts is worth coaching.
+export const RECURRING_COMP_WINDOW = 5;
+export const RECURRING_COMP_MIN_RATE = 0.5; // ≥ 50% of the last 5 attempts
+
+// Inactivity: no attempt in this many days flags a client for a nudge.
+export const INACTIVITY_DAYS = 5;
+
+// Poor camera confidence: this share of recent attempts coming back
+// reduced/low means their setup is hurting feedback quality.
+export const LOW_CONFIDENCE_WINDOW = 5;
+export const LOW_CONFIDENCE_MIN_RATE = 0.5;
+
+// Stalled/declining ROM: compare the average of the most-recent attempts to the
+// prior block on a movement. A drop (beyond noise) is "declining"; a best recent
+// ROM below this percent of reference is "below target".
+export const ROM_TREND_RECENT = 3;
+export const ROM_TREND_EPSILON_PCT = 3; // within ±3% counts as "holding"
+export const ROM_BELOW_TARGET_PCT = 70; // best recent ROM under 70% of reference
+

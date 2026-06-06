@@ -38,6 +38,17 @@ export async function listClientAttempts(
   return (data ?? []) as ClientAttempt[];
 }
 
+/** Trainer view: every attempt on the trainer's movements (RLS auto-scopes to
+ * movements this trainer owns), newest first. Feeds the Clients dashboard. */
+export async function listTrainerAttempts(): Promise<ClientAttempt[]> {
+  const { data, error } = await supabase
+    .from(TABLE)
+    .select('*')
+    .order('attempted_at', { ascending: false });
+  if (error) throw new Error(error.message);
+  return (data ?? []) as ClientAttempt[];
+}
+
 /** Trainer view: attempts across their clients (RLS enforces ownership). */
 export async function listAttemptsForMovement(movementId: string): Promise<ClientAttempt[]> {
   const { data, error } = await supabase
