@@ -163,12 +163,20 @@ for (const b of blocks) {
     });
     doc.moveDown(0.4);
   } else if (b.type === 'pre') {
-    const padY = 6;
-    const startY = doc.y;
-    doc.font(MONO).fontSize(9.5);
-    const textHeight = doc.heightOfString(b.text, { width: width - 16 });
-    doc.rect(doc.page.margins.left, startY, width, textHeight + padY * 2).fill('#f1f5f9');
-    doc.fillColor('#0f172a').text(b.text, doc.page.margins.left + 8, startY + padY, { width: width - 16 });
+    // Render line-by-line with a continuous background so long blocks paginate
+    // cleanly (a single full-height rect would not span page breaks).
+    doc.font(MONO).fontSize(9);
+    const left = doc.page.margins.left;
+    const bottom = doc.page.height - doc.page.margins.bottom;
+    const lines = b.text.split('\n');
+    for (const ln of lines) {
+      const h = Math.max(doc.currentLineHeight(), doc.heightOfString(ln || ' ', { width: width - 16 }));
+      if (doc.y + h > bottom) doc.addPage();
+      const y = doc.y;
+      doc.rect(left, y, width, h).fill('#f1f5f9');
+      doc.fillColor('#0f172a').text(ln || ' ', left + 8, y + 1, { width: width - 16 });
+      doc.y = y + h;
+    }
     doc.moveDown(0.6);
   } else if (b.type === 'quote') {
     doc.fontSize(10.5);
