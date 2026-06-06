@@ -12,5 +12,6 @@
  * Local development overrides these via `.env` (VITE_SUPABASE_URL /
  * VITE_SUPABASE_ANON_KEY). Filled in during deployment.
  */
-export const PUBLIC_SUPABASE_URL = '';
-export const PUBLIC_SUPABASE_ANON_KEY = '';
+export const PUBLIC_SUPABASE_URL = 'https://ztrfhfdsyydbggjqqxvl.supabase.co';
+export const PUBLIC_SUPABASE_ANON_KEY =
+  'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inp0cmZoZmRzeXlkYmdnanFxeHZsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODA3MDU5NTEsImV4cCI6MjA5NjI4MTk1MX0.Xl_M8jfqNCdx10Sb227XUXCEpxMGWeA9NaH24tHwsdc';
