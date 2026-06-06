@@ -76,6 +76,7 @@ export function makePose(params: PoseParams = {}): PoseFrame {
 
   if (params.visibility) {
     for (const [idx, v] of Object.entries(params.visibility)) {
+      if (v === undefined) continue;
       frame[Number(idx)] = { ...frame[Number(idx)], visibility: v };
     }
   }

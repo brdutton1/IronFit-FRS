@@ -34,7 +34,6 @@ export async function getProfile(userId: string): Promise<Profile | null> {
     .eq('user_id', userId)
     .maybeSingle();
   if (error) {
-    // eslint-disable-next-line no-console
     console.error('[IronFit] getProfile failed', error.message);
     return null;
   }

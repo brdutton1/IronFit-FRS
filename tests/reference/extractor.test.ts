@@ -1,14 +1,14 @@
 import { describe, expect, it } from 'vitest';
 import { extractReferenceDataset, referenceQuality } from '@/lib/reference/extractor';
-import { LM } from '@/lib/pose/landmarks';
+import { LM, type AngleKey } from '@/lib/pose/landmarks';
 import { makePose, makeShoulderCarPerformance } from '../helpers/pose';
 
 const baseInput = {
   movement_id: 'm1',
   fps: 30,
-  targetAngles: ['shoulder_flexion_right'] as const,
-  stillnessAngles: ['spinal_flexion'] as const,
-  primaryAngle: 'shoulder_flexion_right' as const,
+  targetAngles: ['shoulder_flexion_right'] as AngleKey[],
+  stillnessAngles: ['spinal_flexion'] as AngleKey[],
+  primaryAngle: 'shoulder_flexion_right' as AngleKey,
   cameraAngle: 'side' as const,
   multiRep: false,
   cues: ['reach long'],
@@ -62,9 +62,9 @@ describe('extractReferenceDataset', () => {
     const frames = [makePose({ shoulderFlexionRight: 90 })];
     const ds = extractReferenceDataset({
       ...baseInput,
-      targetAngles: ['shoulder_rotation_right'],
-      primaryAngle: 'shoulder_rotation_right',
-      cameraAngle: 'front',
+      targetAngles: ['shoulder_rotation_right'] as AngleKey[],
+      primaryAngle: 'shoulder_rotation_right' as AngleKey,
+      cameraAngle: 'front' as const,
       frames,
     });
     expect(ds.target_joints.shoulder_rotation_right.rotation_limited).toBe(true);

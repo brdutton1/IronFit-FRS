@@ -110,7 +110,8 @@ export function generateThumbnail(file: File): Promise<Blob> {
       canvas.toBlob(
         (blob) => {
           URL.revokeObjectURL(video.src);
-          blob ? resolve(blob) : reject(new Error('Thumbnail encode failed'));
+          if (blob) resolve(blob);
+          else reject(new Error('Thumbnail encode failed'));
         },
         'image/jpeg',
         0.8,

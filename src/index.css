@@ -1,0 +1,64 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  color-scheme: dark;
+}
+
+html,
+body,
+#root {
+  height: 100%;
+}
+
+body {
+  @apply bg-slate-950 text-slate-100 antialiased;
+  margin: 0;
+  font-family: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+}
+
+/* Respect users who ask for less motion (WCAG 2.3.3 / prefers-reduced-motion). */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+/* Visible focus ring for keyboard users everywhere. */
+:focus-visible {
+  outline: 3px solid #38bdf8;
+  outline-offset: 2px;
+}
+
+@layer components {
+  .btn {
+    @apply inline-flex items-center justify-center gap-2 rounded-xl px-4 py-3 font-semibold transition-colors disabled:cursor-not-allowed disabled:opacity-50;
+  }
+  .btn-primary {
+    @apply btn bg-sky-500 text-slate-950 hover:bg-sky-400;
+  }
+  .btn-secondary {
+    @apply btn border border-slate-700 bg-slate-900 text-slate-100 hover:bg-slate-800;
+  }
+  .btn-danger {
+    @apply btn border border-red-700 bg-red-950 text-red-200 hover:bg-red-900;
+  }
+  .field-label {
+    @apply mb-1 block text-sm font-medium text-slate-300;
+  }
+  .field-input {
+    @apply w-full rounded-lg border border-slate-700 bg-slate-900 px-3 py-2 text-slate-100 placeholder:text-slate-500 focus:border-sky-500;
+  }
+  .card {
+    @apply rounded-2xl border border-slate-800 bg-slate-900/60 p-4;
+  }
+  .chip {
+    @apply rounded-full border px-3 py-1 text-sm transition-colors;
+  }
+}
