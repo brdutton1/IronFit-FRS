@@ -2,12 +2,22 @@ import type { Session } from '@supabase/supabase-js';
 import type { Profile } from '@/types/profile';
 import { supabase, siteUrl } from './client';
 
-/** Send a passwordless magic link to `email`. */
-export async function sendMagicLink(email: string): Promise<{ error: string | null }> {
+/**
+ * Send a one-time sign-in email. The email template is configured to show a
+ * 6-digit CODE (not a clickable link) so email security scanners can't
+ * pre-consume the token by following a link. Creates the user if new.
+ */
+export async function sendLoginCode(email: string): Promise<{ error: string | null }> {
   const { error } = await supabase.auth.signInWithOtp({
     email,
-    options: { emailRedirectTo: siteUrl },
+    options: { shouldCreateUser: true, emailRedirectTo: siteUrl },
   });
+  return { error: error?.message ?? null };
+}
+
+/** Verify the 6-digit code the user typed in. Establishes the session locally. */
+export async function verifyLoginCode(email: string, token: string): Promise<{ error: string | null }> {
+  const { error } = await supabase.auth.verifyOtp({ email, token: token.trim(), type: 'email' });
   return { error: error?.message ?? null };
 }
 
