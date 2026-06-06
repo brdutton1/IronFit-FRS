@@ -1,5 +1,5 @@
 import * as tus from 'tus-js-client';
-import { supabase } from './client';
+import { supabase, supabaseUrl } from './client';
 
 export const REFERENCE_BUCKET = 'reference-videos';
 export const THUMBNAIL_BUCKET = 'reference-thumbnails';
@@ -28,7 +28,7 @@ export async function uploadReferenceVideo(
   } = await supabase.auth.getSession();
   if (!session) throw new Error('Not signed in.');
 
-  const projectUrl = (import.meta.env.VITE_SUPABASE_URL as string).replace(/\/$/, '');
+  const projectUrl = supabaseUrl.replace(/\/$/, '');
 
   await new Promise<void>((resolve, reject) => {
     const upload = new tus.Upload(file, {
