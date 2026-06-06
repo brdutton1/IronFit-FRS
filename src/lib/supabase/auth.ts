@@ -1,24 +1,28 @@
 import type { Session } from '@supabase/supabase-js';
 import type { Profile } from '@/types/profile';
-import { supabase, siteUrl } from './client';
+import { supabase } from './client';
 
 /**
- * Send a one-time sign-in email. The email template is configured to show a
- * 6-digit CODE (not a clickable link) so email security scanners can't
- * pre-consume the token by following a link. Creates the user if new.
+ * Email + password sign-in. No email is sent, so nothing in the login path can
+ * be intercepted by an email scanner, rate-limited, or fail to deliver.
  */
-export async function sendLoginCode(email: string): Promise<{ error: string | null }> {
-  const { error } = await supabase.auth.signInWithOtp({
-    email,
-    options: { shouldCreateUser: true, emailRedirectTo: siteUrl },
-  });
+export async function signInWithPassword(email: string, password: string): Promise<{ error: string | null }> {
+  const { error } = await supabase.auth.signInWithPassword({ email: email.trim(), password });
   return { error: error?.message ?? null };
 }
 
-/** Verify the 6-digit code the user typed in. Establishes the session locally. */
-export async function verifyLoginCode(email: string, token: string): Promise<{ error: string | null }> {
-  const { error } = await supabase.auth.verifyOtp({ email, token: token.trim(), type: 'email' });
-  return { error: error?.message ?? null };
+/**
+ * Create an account with email + password. With "Confirm email" disabled on the
+ * project this returns a session immediately (instant sign-in). `needsConfirm`
+ * is true if a session was NOT returned (confirmation still enabled) so the UI
+ * can prompt accordingly.
+ */
+export async function signUpWithPassword(
+  email: string,
+  password: string,
+): Promise<{ error: string | null; needsConfirm: boolean }> {
+  const { data, error } = await supabase.auth.signUp({ email: email.trim(), password });
+  return { error: error?.message ?? null, needsConfirm: !error && !data.session };
 }
 
 export async function signOut(): Promise<void> {

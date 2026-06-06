@@ -1,62 +1,50 @@
 import { useState, type FormEvent } from 'react';
-import { sendLoginCode, verifyLoginCode } from '@/lib/supabase/auth';
+import { signInWithPassword, signUpWithPassword } from '@/lib/supabase/auth';
 import { useAuth } from '@/lib/session';
 
 /**
- * Passwordless sign-in via a 6-digit emailed CODE (not a magic link). Codes
- * can't be pre-consumed by email security scanners and work on whatever device
- * you type them into — no redirect, no cross-device gotchas.
+ * Email + password sign-in / sign-up. No email is sent at login, so none of the
+ * email-delivery failure modes (scanners, rate limits, sandbox restrictions)
+ * can block access. On success the auth listener swaps this screen for the app.
  */
 export default function MagicLinkForm() {
   const { configured } = useAuth();
-  const [step, setStep] = useState<'email' | 'code'>('email');
+  const [mode, setMode] = useState<'signin' | 'signup'>('signin');
   const [email, setEmail] = useState('');
-  const [code, setCode] = useState('');
+  const [password, setPassword] = useState('');
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
 
-  async function onSendEmail(e: FormEvent) {
+  async function onSubmit(e: FormEvent) {
     e.preventDefault();
     setBusy(true);
     setError(null);
     setNotice(null);
-    const { error } = await sendLoginCode(email.trim());
-    setBusy(false);
-    if (error) {
-      setError(error);
+
+    if (mode === 'signup') {
+      const { error, needsConfirm } = await signUpWithPassword(email, password);
+      if (error) {
+        setError(error);
+      } else if (needsConfirm) {
+        setNotice('Account created. Check your email to confirm, then sign in.');
+        setMode('signin');
+      }
+      // Otherwise a session is set and the auth listener routes into the app.
     } else {
-      setStep('code');
-      setNotice(`We sent a 6-digit code to ${email.trim()}. Enter it below.`);
+      const { error } = await signInWithPassword(email, password);
+      if (error) setError(error);
     }
-  }
-
-  async function onVerify(e: FormEvent) {
-    e.preventDefault();
-    setBusy(true);
-    setError(null);
-    const { error } = await verifyLoginCode(email.trim(), code);
-    // On success the auth listener swaps this screen for the app automatically.
-    if (error) {
-      setError(error);
-      setBusy(false);
-    }
-  }
-
-  async function onResend() {
-    setBusy(true);
-    setError(null);
-    const { error } = await sendLoginCode(email.trim());
     setBusy(false);
-    setNotice(error ? null : 'New code sent.');
-    if (error) setError(error);
   }
 
   return (
     <main className="mx-auto flex min-h-full max-w-md flex-col justify-center gap-6 p-6">
       <header className="text-center">
         <h1 className="text-2xl font-bold">IronFit Movement Mirror</h1>
-        <p className="mt-2 text-slate-400">Sign in with a one-time code — no password needed.</p>
+        <p className="mt-2 text-slate-400">
+          {mode === 'signin' ? 'Sign in to your account.' : 'Create your account.'}
+        </p>
       </header>
 
       {!configured && (
@@ -71,81 +59,65 @@ export default function MagicLinkForm() {
         </div>
       )}
 
-      {step === 'email' ? (
-        <form onSubmit={onSendEmail} className="card flex flex-col gap-4">
-          <div>
-            <label htmlFor="email" className="field-label">
-              Email address
-            </label>
-            <input
-              id="email"
-              type="email"
-              required
-              autoComplete="email"
-              inputMode="email"
-              className="field-input"
-              placeholder="you@example.com"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-            />
-          </div>
-          {error && (
-            <p role="alert" className="text-sm text-red-300">
-              {error}
-            </p>
-          )}
-          <button type="submit" className="btn-primary" disabled={busy || !configured}>
-            {busy ? 'Sending…' : 'Email me a code'}
-          </button>
-        </form>
-      ) : (
-        <form onSubmit={onVerify} className="card flex flex-col gap-4">
-          <div>
-            <label htmlFor="code" className="field-label">
-              6-digit code
-            </label>
-            <input
-              id="code"
-              type="text"
-              required
-              autoComplete="one-time-code"
-              inputMode="numeric"
-              pattern="[0-9]*"
-              maxLength={6}
-              className="field-input text-center text-2xl tracking-[0.5em]"
-              placeholder="000000"
-              value={code}
-              onChange={(e) => setCode(e.target.value.replace(/\D/g, ''))}
-              autoFocus
-            />
-          </div>
-          {error && (
-            <p role="alert" className="text-sm text-red-300">
-              {error}
-            </p>
-          )}
-          <button type="submit" className="btn-primary" disabled={busy || code.length < 6}>
-            {busy ? 'Verifying…' : 'Verify & sign in'}
-          </button>
-          <div className="flex items-center justify-between text-sm">
-            <button
-              type="button"
-              className="text-slate-400 hover:text-slate-100"
-              onClick={() => {
-                setStep('email');
-                setCode('');
-                setError(null);
-                setNotice(null);
-              }}
-            >
-              ← Change email
-            </button>
-            <button type="button" className="text-sky-400 hover:text-sky-300" onClick={() => void onResend()} disabled={busy}>
-              Resend code
-            </button>
-          </div>
-        </form>
-      )}
+      <form onSubmit={onSubmit} className="card flex flex-col gap-4">
+        <div>
+          <label htmlFor="email" className="field-label">
+            Email address
+          </label>
+          <input
+            id="email"
+            type="email"
+            required
+            autoComplete="email"
+            inputMode="email"
+            className="field-input"
+            placeholder="you@example.com"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+          />
+        </div>
+        <div>
+          <label htmlFor="password" className="field-label">
+            Password
+          </label>
+          <input
+            id="password"
+            type="password"
+            required
+            minLength={6}
+            autoComplete={mode === 'signin' ? 'current-password' : 'new-password'}
+            className="field-input"
+            placeholder={mode === 'signup' ? 'At least 6 characters' : 'Your password'}
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+          />
+        </div>
+
+        {error && (
+          <p role="alert" className="text-sm text-red-300">
+            {error}
+          </p>
+        )}
+
+        <button type="submit" className="btn-primary" disabled={busy || !configured}>
+          {busy ? 'Please wait…' : mode === 'signin' ? 'Sign in' : 'Create account'}
+        </button>
+      </form>
+
+      <p className="text-center text-sm text-slate-400">
+        {mode === 'signin' ? "Don’t have an account yet?" : 'Already have an account?'}{' '}
+        <button
+          type="button"
+          className="font-semibold text-sky-400 hover:text-sky-300"
+          onClick={() => {
+            setMode(mode === 'signin' ? 'signup' : 'signin');
+            setError(null);
+            setNotice(null);
+          }}
+        >
+          {mode === 'signin' ? 'Create one' : 'Sign in'}
+        </button>
+      </p>
 
       <p className="text-center text-xs text-slate-500">
         IronFit Movement Mirror is a coaching tool. It does not diagnose injury or replace in-person
