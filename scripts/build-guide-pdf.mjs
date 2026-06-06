@@ -1,7 +1,7 @@
-// Render docs/TRAINER_GUIDE.md to docs/TRAINER_GUIDE.pdf.
+// Render the docs/*.md guides to matching PDFs.
 //
 // Pure-JS via pdfkit — no headless browser or system tools, works offline once
-// dependencies are installed. Handles the Markdown subset used in the guide
+// dependencies are installed. Handles the Markdown subset used in the docs
 // (h1–h3, paragraphs, ordered/unordered lists, code fences, blockquotes, rules,
 // and inline **bold** / *italic* / `code`).
 //
@@ -13,8 +13,12 @@ import { fileURLToPath } from 'node:url';
 import PDFDocument from 'pdfkit';
 
 const root = join(dirname(fileURLToPath(import.meta.url)), '..');
-const mdPath = join(root, 'docs', 'TRAINER_GUIDE.md');
-const pdfPath = join(root, 'docs', 'TRAINER_GUIDE.pdf');
+
+// Each Markdown guide and the PDF it renders to.
+const DOCS = [
+  { md: 'docs/TRAINER_GUIDE.md', pdf: 'docs/TRAINER_GUIDE.pdf' },
+  { md: 'docs/PROJECT_BACKGROUND.md', pdf: 'docs/PROJECT_BACKGROUND.pdf' },
+];
 
 const FONT = 'Helvetica';
 const BOLD = 'Helvetica-Bold';
@@ -126,9 +130,10 @@ function writeInline(doc, str, opts = {}) {
 }
 
 // ── Render ───────────────────────────────────────────────────────────────
-const blocks = parse(readFileSync(mdPath, 'utf8'));
+function render(mdAbs, pdfAbs) {
+const blocks = parse(readFileSync(mdAbs, 'utf8'));
 const doc = new PDFDocument({ size: 'A4', margins: { top: 56, bottom: 56, left: 60, right: 60 } });
-doc.pipe(createWriteStream(pdfPath));
+doc.pipe(createWriteStream(pdfAbs));
 
 const width = doc.page.width - doc.page.margins.left - doc.page.margins.right;
 
@@ -183,4 +188,9 @@ for (const b of blocks) {
 }
 
 doc.end();
-console.log('Wrote', pdfPath);
+console.log('Wrote', pdfAbs);
+}
+
+for (const d of DOCS) {
+  render(join(root, d.md), join(root, d.pdf));
+}
