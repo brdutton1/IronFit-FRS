@@ -2,6 +2,11 @@ import type { ReactNode } from 'react';
 import { Link, NavLink } from 'react-router-dom';
 import { signOut } from '@/lib/supabase/auth';
 import { useAuth } from '@/lib/session';
+import DevNotes from './DevNotes';
+
+// Testing feedback widget. On by default; set VITE_DEV_NOTES=off to retire it
+// before real clients onboard.
+const DEV_NOTES_ENABLED = ((import.meta.env.VITE_DEV_NOTES as string | undefined) ?? 'on') !== 'off';
 
 interface Tab {
   to: string;
@@ -83,6 +88,8 @@ export default function AppShell({ children, title }: { children: ReactNode; tit
         IronFit Movement Mirror is a coaching tool. It does not diagnose injury or replace in-person
         assessment by a qualified practitioner.
       </footer>
+
+      {DEV_NOTES_ENABLED && <DevNotes pageTitle={title} />}
     </div>
   );
 }
