@@ -1,0 +1,42 @@
+{
+  "movement_id": "fixture-hip-car-right",
+  "fps": 30,
+  "duration_sec": 6,
+  "rep_count": 1,
+  "target_joints": {
+    "hip_flexion_right": {
+      "trajectory": [0, 15, 35, 60, 85, 100, 110, 112, 110, 100, 85, 60, 35, 15, 0],
+      "peak": 112,
+      "rom": 112,
+      "smoothness_score": 0.94,
+      "confidence": "high",
+      "rotation_limited": false
+    },
+    "hip_abduction_right": {
+      "trajectory": [0, 8, 18, 30, 38, 42, 44, 45, 44, 42, 38, 30, 18, 8, 0],
+      "peak": 45,
+      "rom": 45,
+      "smoothness_score": 0.92,
+      "confidence": "high",
+      "rotation_limited": false
+    }
+  },
+  "stillness_joints": {
+    "spinal_flexion": {
+      "baseline_angle": 3,
+      "max_deviation": 5,
+      "variance": 2.0,
+      "confidence": "high",
+      "rotation_limited": false
+    },
+    "knee_flexion_right": {
+      "baseline_angle": 90,
+      "max_deviation": 6,
+      "variance": 3.1,
+      "confidence": "high",
+      "rotation_limited": false
+    }
+  },
+  "cues": ["Drive the knee up and around", "Stay tall, don't lean away"],
+  "compensation_patterns": ["lumbar_lateral_flexion"]
+}

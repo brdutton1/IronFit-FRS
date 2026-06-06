@@ -1,0 +1,27 @@
+{
+  "movement_id": "fixture-shoulder-car-right",
+  "fps": 30,
+  "duration_sec": 4,
+  "rep_count": 1,
+  "target_joints": {
+    "shoulder_flexion_right": {
+      "trajectory": [0, 20, 45, 80, 120, 150, 168, 170, 168, 150, 120, 80, 45, 20, 0],
+      "peak": 170,
+      "rom": 170,
+      "smoothness_score": 0.96,
+      "confidence": "high",
+      "rotation_limited": false
+    }
+  },
+  "stillness_joints": {
+    "spinal_flexion": {
+      "baseline_angle": 2,
+      "max_deviation": 4,
+      "variance": 1.1,
+      "confidence": "high",
+      "rotation_limited": false
+    }
+  },
+  "cues": ["Reach long through the fingertips", "Keep the ribs stacked over the pelvis"],
+  "compensation_patterns": ["lumbar_extension"]
+}
