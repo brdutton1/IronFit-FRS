@@ -47,6 +47,8 @@ export interface Movement {
   reference_video_path: string | null;
   reference_dataset: ReferenceDataset | null;
   reference_quality: Confidence | null;
+  /** Optional linked library video — a "watch & follow" demo (no AI scoring). */
+  video_id: string | null;
   status: MovementStatus;
   created_at: string;
   updated_at: string;

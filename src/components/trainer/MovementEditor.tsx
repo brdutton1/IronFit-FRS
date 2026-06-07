@@ -18,7 +18,12 @@ import {
   setMovementStatus,
   updateMovement,
 } from '@/lib/supabase/movements';
+import { createVideo, getVideo, listTrainerVideos } from '@/lib/supabase/videos';
+import { fetchOEmbedThumbnail, parseVideoLink } from '@/lib/videoLinks';
+import { KIND_LABEL, movementKind } from '@/lib/movementKind';
+import VideoEmbed from '@/components/common/VideoEmbed';
 import type { CompensationPattern, Movement, MovementDraft } from '@/types/movement';
+import type { Video } from '@/types/video';
 
 const emptyDraft = (): MovementDraft => ({
   name: '',
@@ -33,6 +38,7 @@ const emptyDraft = (): MovementDraft => ({
   cues: [],
   compensation_patterns: [],
   reference_video_path: null,
+  video_id: null,
   status: 'draft',
 });
 
@@ -50,6 +56,17 @@ export default function MovementEditor() {
   const [error, setError] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
 
+  // Demonstration source: upload a reference (AI scoring) OR link a library video.
+  const [demoMode, setDemoMode] = useState<'upload' | 'link'>('upload');
+  const [videos, setVideos] = useState<Video[]>([]);
+  const [linkedVideo, setLinkedVideo] = useState<Video | null>(null);
+  const [linkUrl, setLinkUrl] = useState('');
+
+  useEffect(() => {
+    if (!profile) return;
+    listTrainerVideos(profile.user_id).then(setVideos).catch(() => {});
+  }, [profile]);
+
   useEffect(() => {
     if (isNew) return;
     getMovement(id!)
@@ -60,6 +77,9 @@ export default function MovementEditor() {
         void _id; void trainer_id; void created_at; void updated_at; void reference_dataset; void reference_quality;
         setForm(draft);
         setCuesText(m.cues.join('\n'));
+        // Open to the mode that matches what's already attached.
+        setDemoMode(m.reference_dataset ? 'upload' : m.video_id ? 'link' : 'upload');
+        if (m.video_id) getVideo(m.video_id).then(setLinkedVideo).catch(() => {});
       })
       .catch((e) => setError(e.message));
   }, [id, isNew]);
@@ -117,18 +137,90 @@ export default function MovementEditor() {
   async function onToggleLive() {
     if (!movement) return;
     const next = movement.status === 'live' ? 'draft' : 'live';
-    if (next === 'live' && !movement.reference_dataset) {
-      setError('Add and approve a reference before going live.');
+    if (next === 'live' && !movement.reference_dataset && !movement.video_id) {
+      setError('Add a reference video or link a demo before going live.');
       return;
     }
     await setMovementStatus(movement.id, next);
     setMovement({ ...movement, status: next });
   }
 
+  // Attach a library video (or paste a new link) as the movement's demo.
+  async function attachVideo(videoId: string, video: Video | null) {
+    if (!movement) return;
+    try {
+      const updated = await updateMovement(movement.id, { video_id: videoId });
+      setMovement(updated);
+      setLinkedVideo(video);
+      setNotice('Demo video attached.');
+    } catch (err) {
+      setError((err as Error).message);
+    }
+  }
+
+  async function onPickVideo(videoId: string) {
+    if (!videoId) return;
+    const v = videos.find((x) => x.id === videoId) ?? (await getVideo(videoId).catch(() => null));
+    await attachVideo(videoId, v ?? null);
+  }
+
+  async function onAddLink() {
+    if (!profile || !movement) return;
+    const parsed = parseVideoLink(linkUrl);
+    if (!parsed) {
+      setError('Paste a full YouTube, TikTok, or Vimeo link.');
+      return;
+    }
+    setError(null);
+    try {
+      const thumb = parsed.provider === 'youtube' ? null : await fetchOEmbedThumbnail(parsed.provider, parsed.url);
+      const created = await createVideo(profile.user_id, {
+        provider: parsed.provider,
+        external_id: parsed.externalId,
+        url: parsed.url,
+        thumbnail_url: thumb,
+        title: form.name || 'Demonstration',
+        description: null,
+        regions: [],
+        status: 'live',
+      });
+      setVideos((prev) => [created, ...prev]);
+      setLinkUrl('');
+      await attachVideo(created.id, created);
+    } catch (err) {
+      setError((err as Error).message);
+    }
+  }
+
+  async function onRemoveVideo() {
+    if (!movement) return;
+    try {
+      const updated = await updateMovement(movement.id, { video_id: null });
+      setMovement(updated);
+      setLinkedVideo(null);
+    } catch (err) {
+      setError((err as Error).message);
+    }
+  }
+
   return (
     <AppShell title={isNew ? 'New movement' : form.name || 'Edit movement'}>
       {error && <p role="alert" className="card mb-4 border-red-700 text-red-300">{error}</p>}
       {notice && <p role="status" className="card mb-4 border-emerald-700 text-emerald-300">{notice}</p>}
+
+      {!isNew && movement && (
+        <p className="mb-4">
+          <span
+            className={`chip border text-xs ${
+              movementKind(movement) === 'coached'
+                ? 'border-sky-700 bg-sky-950/40 text-sky-200'
+                : 'border-slate-600 bg-slate-800/60 text-slate-300'
+            }`}
+          >
+            {KIND_LABEL[movementKind(movement)]}
+          </span>
+        </p>
+      )}
 
       <form onSubmit={onSubmit} className="flex flex-col gap-4">
         <div className="card flex flex-col gap-4">
@@ -245,25 +337,109 @@ export default function MovementEditor() {
 
       {!isNew && movement && (
         <section className="mt-8 flex flex-col gap-4">
-          <div className="flex items-center justify-between">
-            <h2 className="text-lg font-bold">Reference video</h2>
+          <div className="flex items-center justify-between gap-3">
+            <h2 className="text-lg font-bold">Demonstration</h2>
             <button type="button" className={movement.status === 'live' ? 'btn-secondary' : 'btn-primary'} onClick={() => void onToggleLive()}>
               {movement.status === 'live' ? 'Unpublish (set draft)' : 'Publish — go live'}
             </button>
           </div>
 
-          <label className="flex items-center gap-2 text-sm text-slate-300">
-            <input type="checkbox" checked={multiRep} onChange={(e) => setMultiRep(e.target.checked)} />
-            This reference shows multiple reps (enable rep counting)
-          </label>
+          <p className="text-sm text-slate-400">
+            Upload a reference to get the live <strong>AI Mirror</strong> (ROM &amp; form scoring), or
+            link a video from your library for a <strong>watch &amp; follow</strong> demo.
+          </p>
 
-          <ReferenceUploader
-            movement={movement}
-            multiRep={multiRep}
-            onExtracted={(updated) => setMovement(updated)}
-          />
+          {/* Mode switch */}
+          <div className="flex gap-2" role="group" aria-label="Demonstration source">
+            <button
+              type="button"
+              aria-pressed={demoMode === 'upload'}
+              onClick={() => setDemoMode('upload')}
+              className={`chip border ${demoMode === 'upload' ? 'border-sky-500 bg-sky-500/20 text-sky-200' : 'border-slate-700 text-slate-300'}`}
+            >
+              Upload a reference (AI Mirror)
+            </button>
+            <button
+              type="button"
+              aria-pressed={demoMode === 'link'}
+              onClick={() => setDemoMode('link')}
+              className={`chip border ${demoMode === 'link' ? 'border-sky-500 bg-sky-500/20 text-sky-200' : 'border-slate-700 text-slate-300'}`}
+            >
+              Use a video link (watch &amp; follow)
+            </button>
+          </div>
 
-          {movement.reference_dataset && <ReferenceReview movement={movement} />}
+          {demoMode === 'upload' ? (
+            <>
+              <label className="flex items-center gap-2 text-sm text-slate-300">
+                <input type="checkbox" checked={multiRep} onChange={(e) => setMultiRep(e.target.checked)} />
+                This reference shows multiple reps (enable rep counting)
+              </label>
+
+              <ReferenceUploader
+                movement={movement}
+                multiRep={multiRep}
+                onExtracted={(updated) => setMovement(updated)}
+              />
+
+              {movement.reference_dataset && <ReferenceReview movement={movement} />}
+            </>
+          ) : (
+            <div className="flex flex-col gap-3">
+              {linkedVideo ? (
+                <>
+                  <VideoEmbed
+                    provider={linkedVideo.provider}
+                    externalId={linkedVideo.external_id}
+                    thumbnailUrl={linkedVideo.thumbnail_url}
+                    title={linkedVideo.title}
+                  />
+                  <div className="flex items-center justify-between gap-3">
+                    <span className="text-sm text-slate-300">{linkedVideo.title}</span>
+                    <button type="button" onClick={() => void onRemoveVideo()} className="text-xs text-slate-400 hover:text-red-300">
+                      Remove
+                    </button>
+                  </div>
+                </>
+              ) : (
+                <>
+                  <div>
+                    <label htmlFor="pickVideo" className="field-label">Pick from your library</label>
+                    <select
+                      id="pickVideo"
+                      className="field-input"
+                      value=""
+                      onChange={(e) => void onPickVideo(e.target.value)}
+                    >
+                      <option value="" disabled>Choose a video…</option>
+                      {videos.map((v) => (
+                        <option key={v.id} value={v.id}>
+                          {v.title}{v.trainer_id === null ? ' (built-in)' : ''}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+
+                  <div>
+                    <label htmlFor="pasteLink" className="field-label">…or paste a new link</label>
+                    <div className="flex gap-2">
+                      <input
+                        id="pasteLink"
+                        className="field-input"
+                        placeholder="YouTube, TikTok, or Vimeo link"
+                        value={linkUrl}
+                        onChange={(e) => setLinkUrl(e.target.value)}
+                      />
+                      <button type="button" className="btn-secondary shrink-0" onClick={() => void onAddLink()} disabled={!linkUrl.trim()}>
+                        Add
+                      </button>
+                    </div>
+                    <p className="mt-1 text-xs text-slate-500">New links are saved to your Video library too.</p>
+                  </div>
+                </>
+              )}
+            </div>
+          )}
         </section>
       )}
     </AppShell>
