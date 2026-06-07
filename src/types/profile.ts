@@ -28,6 +28,10 @@ export interface ClientIntake {
   injuries: string | null;
   experience: string | null;
   emergency_contact: string | null;
+  /** Body regions the client tapped (keys from FOCUS_AREAS). */
+  focus_areas: string[] | null;
+  /** Optional "anything a doctor told you to avoid?" note. */
+  avoid_notes: string | null;
   consent_at: string | null;
   created_at: string;
 }

@@ -6,6 +6,7 @@ import { SignalChips } from './TrainerDashboard';
 import { useAuth } from '@/lib/session';
 import { getClientProfile } from '@/lib/supabase/clients';
 import { getClientIntake } from '@/lib/supabase/intake';
+import { focusAreaLabels } from '@/lib/intakeOptions';
 import { listClientAttempts } from '@/lib/supabase/attempts';
 import { listAllMovements } from '@/lib/supabase/movements';
 import { assignMovement, listClientProgram, unassignMovement, updateAssignmentNote } from '@/lib/supabase/programs';
@@ -102,6 +103,8 @@ export default function ClientDetail() {
   if (error) return <AppShell><p role="alert" className="card border-red-700 text-red-300">{error}</p></AppShell>;
   if (!client || !signals) return <AppShell><p className="text-slate-400">Loading…</p></AppShell>;
 
+  const focusLabels = focusAreaLabels(intake?.focus_areas);
+
   return (
     <AppShell title={client.display_name ?? 'Client'}>
       <div className="mb-5 flex items-start justify-between gap-3">
@@ -119,12 +122,23 @@ export default function ClientDetail() {
         </Link>
       </div>
 
-      {intake && (intake.goals || intake.injuries || intake.experience || intake.phone || intake.emergency_contact) && (
+      {intake && (focusLabels.length > 0 || intake.goals || intake.injuries || intake.avoid_notes || intake.experience || intake.phone || intake.emergency_contact) && (
         <section className="card mb-4">
           <h3 className="mb-2 font-semibold">Intake</h3>
+          {focusLabels.length > 0 && (
+            <div className="mb-3">
+              <span className="text-sm text-slate-400">Here for</span>
+              <span className="mt-1 flex flex-wrap gap-1">
+                {focusLabels.map((l) => (
+                  <span key={l} className="chip border border-sky-800 bg-sky-950/40 text-xs text-sky-200">{l}</span>
+                ))}
+              </span>
+            </div>
+          )}
           <dl className="space-y-2 text-sm">
-            {intake.goals && (<div><dt className="text-slate-400">Goals</dt><dd className="text-slate-200">{intake.goals}</dd></div>)}
+            {intake.goals && (<div><dt className="text-slate-400">Specifically</dt><dd className="text-slate-200">{intake.goals}</dd></div>)}
             {intake.injuries && (<div><dt className="text-slate-400">Injuries / history</dt><dd className="text-slate-200">{intake.injuries}</dd></div>)}
+            {intake.avoid_notes && (<div><dt className="text-slate-400">Avoid</dt><dd className="text-slate-200">{intake.avoid_notes}</dd></div>)}
             {intake.experience && (<div><dt className="text-slate-400">Experience</dt><dd className="text-slate-200">{intake.experience}</dd></div>)}
             {intake.phone && (<div><dt className="text-slate-400">Phone</dt><dd className="text-slate-200">{intake.phone}</dd></div>)}
             {intake.emergency_contact && (<div><dt className="text-slate-400">Emergency contact</dt><dd className="text-slate-200">{intake.emergency_contact}</dd></div>)}

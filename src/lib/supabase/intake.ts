@@ -17,10 +17,11 @@ export async function trainerByCode(code: string): Promise<TrainerRef | null> {
 export interface IntakeInput {
   trainer_id: string;
   phone: string;
+  focus_areas: string[];
   goals: string;
-  injuries: string;
   experience: string;
-  emergency_contact: string;
+  injuries: string;
+  avoid_notes: string;
   consent: boolean;
 }
 
@@ -31,10 +32,11 @@ export async function saveIntake(clientId: string, input: IntakeInput): Promise<
       client_id: clientId,
       trainer_id: input.trainer_id,
       phone: input.phone || null,
+      focus_areas: input.focus_areas.length ? input.focus_areas : null,
       goals: input.goals || null,
-      injuries: input.injuries || null,
       experience: input.experience || null,
-      emergency_contact: input.emergency_contact || null,
+      injuries: input.injuries || null,
+      avoid_notes: input.avoid_notes || null,
       consent_at: input.consent ? new Date().toISOString() : null,
     },
     { onConflict: 'client_id' },
