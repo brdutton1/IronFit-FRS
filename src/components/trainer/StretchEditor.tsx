@@ -214,7 +214,12 @@ export default function StretchEditor() {
             )}
             {selectedVideo && (
               <div className="mt-3">
-                <VideoEmbed youtubeId={selectedVideo.youtube_id} title={selectedVideo.title} />
+                <VideoEmbed
+                  provider={selectedVideo.provider}
+                  externalId={selectedVideo.external_id}
+                  thumbnailUrl={selectedVideo.thumbnail_url}
+                  title={selectedVideo.title}
+                />
               </div>
             )}
           </div>

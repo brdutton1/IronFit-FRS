@@ -4,7 +4,7 @@ import AppShell from '@/components/common/AppShell';
 import LibraryNav from './LibraryNav';
 import { useAuth } from '@/lib/session';
 import { listTrainerVideos } from '@/lib/supabase/videos';
-import { thumbnailUrl } from '@/lib/youtube';
+import { thumbnailUrl } from '@/lib/videoLinks';
 import { focusAreaLabels } from '@/lib/intakeOptions';
 import type { Video } from '@/types/video';
 
@@ -83,14 +83,21 @@ export default function VideoLibrary() {
 
 function VideoTile({ video, to }: { video: Video; to?: string }) {
   const regions = focusAreaLabels(video.regions);
+  const thumb = thumbnailUrl(video.provider, video.external_id) ?? video.thumbnail_url;
   const body = (
     <div className="card flex gap-3 hover:border-sky-700">
-      <img
-        src={thumbnailUrl(video.youtube_id)}
-        alt=""
-        loading="lazy"
-        className="h-16 w-28 shrink-0 rounded-lg border border-slate-800 object-cover"
-      />
+      {thumb ? (
+        <img
+          src={thumb}
+          alt=""
+          loading="lazy"
+          className="h-16 w-28 shrink-0 rounded-lg border border-slate-800 object-cover"
+        />
+      ) : (
+        <span className="flex h-16 w-28 shrink-0 items-center justify-center rounded-lg border border-slate-800 bg-slate-900 text-[11px] uppercase text-slate-400">
+          {video.provider}
+        </span>
+      )}
       <div className="min-w-0">
         <p className="truncate font-medium">{video.title}</p>
         <p className="mt-0.5 text-xs text-slate-400">

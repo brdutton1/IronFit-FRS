@@ -4,7 +4,7 @@ import AppShell from '@/components/common/AppShell';
 import VideoEmbed from '@/components/common/VideoEmbed';
 import { useAuth } from '@/lib/session';
 import { FOCUS_AREAS } from '@/lib/intakeOptions';
-import { parseYouTubeId } from '@/lib/youtube';
+import { fetchOEmbedThumbnail, parseVideoLink, type ParsedVideoLink } from '@/lib/videoLinks';
 import { createVideo, deleteVideo, getVideo, updateVideo } from '@/lib/supabase/videos';
 import type { Video } from '@/types/video';
 
@@ -15,7 +15,8 @@ export default function VideoEditor() {
   const { profile } = useAuth();
 
   const [urlInput, setUrlInput] = useState('');
-  const [youtubeId, setYoutubeId] = useState('');
+  const [parsed, setParsed] = useState<ParsedVideoLink | null>(null);
+  const [thumbnailUrl, setThumbnailUrl] = useState<string | null>(null);
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
   const [regions, setRegions] = useState<string[]>([]);
@@ -30,8 +31,9 @@ export default function VideoEditor() {
     getVideo(id!)
       .then((v) => {
         if (!v) return;
-        setYoutubeId(v.youtube_id);
-        setUrlInput(`https://youtu.be/${v.youtube_id}`);
+        setParsed({ provider: v.provider, externalId: v.external_id, url: v.url ?? '' });
+        setUrlInput(v.url ?? '');
+        setThumbnailUrl(v.thumbnail_url);
         setTitle(v.title);
         setDescription(v.description ?? '');
         setRegions(v.regions);
@@ -42,8 +44,15 @@ export default function VideoEditor() {
 
   function onUrlChange(value: string) {
     setUrlInput(value);
-    const parsed = parseYouTubeId(value);
-    setYoutubeId(parsed ?? '');
+    const next = parseVideoLink(value);
+    setParsed(next);
+    setThumbnailUrl(null);
+    // Best-effort preview image for TikTok/Vimeo (YouTube is derived in VideoEmbed).
+    if (next && next.provider !== 'youtube') {
+      void fetchOEmbedThumbnail(next.provider, next.url).then((t) => {
+        if (t) setThumbnailUrl(t);
+      });
+    }
   }
 
   const toggleRegion = (key: string) =>
@@ -52,14 +61,23 @@ export default function VideoEditor() {
   async function onSubmit(e: FormEvent) {
     e.preventDefault();
     if (!profile) return;
-    if (!youtubeId) {
-      setError('Paste a valid YouTube link first.');
+    if (!parsed) {
+      setError('Paste a valid YouTube, TikTok, or Vimeo link first.');
       return;
     }
     setSaving(true);
     setError(null);
     setNotice(null);
-    const draft = { youtube_id: youtubeId, title, description: description || null, regions, status };
+    const draft = {
+      provider: parsed.provider,
+      external_id: parsed.externalId,
+      url: parsed.url || urlInput || null,
+      thumbnail_url: thumbnailUrl,
+      title,
+      description: description || null,
+      regions,
+      status,
+    };
     try {
       if (isNew) {
         const created = await createVideo(profile.user_id, draft);
@@ -94,21 +112,34 @@ export default function VideoEditor() {
       <form onSubmit={onSubmit} className="flex flex-col gap-4">
         <div className="card flex flex-col gap-4">
           <div>
-            <label htmlFor="url" className="field-label">YouTube link</label>
+            <label htmlFor="url" className="field-label">Video link</label>
             <input
               id="url"
               className="field-input"
               required
-              placeholder="https://youtu.be/… or https://www.youtube.com/watch?v=…"
+              placeholder="YouTube, TikTok, or Vimeo link"
               value={urlInput}
               onChange={(e) => onUrlChange(e.target.value)}
             />
-            {urlInput && !youtubeId && (
-              <p className="mt-1 text-xs text-amber-300">That doesn’t look like a YouTube link yet.</p>
+            {urlInput && !parsed && (
+              <p className="mt-1 text-xs text-amber-300">
+                That isn’t a supported link yet. Paste a full YouTube, TikTok, or Vimeo URL
+                (TikTok short <code>vm.tiktok.com</code> links won’t work — open the video and copy its full link).
+              </p>
+            )}
+            {parsed && (
+              <p className="mt-1 text-xs text-slate-500">Detected: {parsed.provider}</p>
             )}
           </div>
 
-          {youtubeId && <VideoEmbed youtubeId={youtubeId} title={title || 'Preview'} />}
+          {parsed && (
+            <VideoEmbed
+              provider={parsed.provider}
+              externalId={parsed.externalId}
+              thumbnailUrl={thumbnailUrl}
+              title={title || 'Preview'}
+            />
+          )}
 
           <div>
             <label htmlFor="title" className="field-label">Title</label>

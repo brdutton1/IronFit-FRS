@@ -171,7 +171,14 @@ function StretchCard({ stretch, video }: { stretch: Stretch; video?: Video }) {
 
       {open && (
         <div className="mt-3 flex flex-col gap-3">
-          {video && <VideoEmbed youtubeId={video.youtube_id} title={stretch.name} />}
+          {video && (
+            <VideoEmbed
+              provider={video.provider}
+              externalId={video.external_id}
+              thumbnailUrl={video.thumbnail_url}
+              title={stretch.name}
+            />
+          )}
           <p className="text-sm text-slate-200">{stretch.instructions}</p>
           {stretch.steps && stretch.steps.length > 0 && (
             <ol className="list-decimal space-y-1 pl-5 text-sm text-slate-200">

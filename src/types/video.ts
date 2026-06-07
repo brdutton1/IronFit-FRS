@@ -1,9 +1,17 @@
-/** A YouTube link in the shared video library. trainer_id null = built-in. */
+import type { VideoProvider } from '@/lib/videoLinks';
+
+/** A video link in the shared library. trainer_id null = built-in. */
 export interface Video {
   id: string;
   /** Owning trainer, or null for a platform-provided (built-in) video. */
   trainer_id: string | null;
-  youtube_id: string;
+  provider: VideoProvider;
+  /** Provider's video id (YouTube 11-char id, TikTok/Vimeo numeric id). */
+  external_id: string;
+  /** Canonical link the trainer pasted (used for oEmbed / "open original"). */
+  url: string | null;
+  /** Cached preview image (mainly for TikTok/Vimeo; YouTube is derivable). */
+  thumbnail_url: string | null;
   title: string;
   description: string | null;
   /** Optional FOCUS_AREAS keys, for filtering. */
