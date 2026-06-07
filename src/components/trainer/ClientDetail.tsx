@@ -8,6 +8,7 @@ import { getClientProfile } from '@/lib/supabase/clients';
 import { getClientIntake } from '@/lib/supabase/intake';
 import { focusAreaLabels } from '@/lib/intakeOptions';
 import { listClientAttempts } from '@/lib/supabase/attempts';
+import { listClientSoreness } from '@/lib/supabase/soreness';
 import { listAllMovements } from '@/lib/supabase/movements';
 import { assignMovement, listClientProgram, unassignMovement, updateAssignmentNote } from '@/lib/supabase/programs';
 import {
@@ -21,6 +22,7 @@ import type { ClientIntake, Profile } from '@/types/profile';
 import type { Movement } from '@/types/movement';
 import type { ProgramAssignment } from '@/types/program';
 import type { ClientAttempt } from '@/types/attempt';
+import type { SorenessReport } from '@/types/soreness';
 
 const DIRECTION_LABEL: Record<string, string> = {
   improving: 'improving ↑',
@@ -37,6 +39,7 @@ export default function ClientDetail() {
   const [attempts, setAttempts] = useState<ClientAttempt[]>([]);
   const [intake, setIntake] = useState<ClientIntake | null>(null);
   const [program, setProgram] = useState<ProgramAssignment[]>([]);
+  const [soreness, setSoreness] = useState<SorenessReport[]>([]);
   const [error, setError] = useState<string | null>(null);
 
   const reloadProgram = useCallback(() => {
@@ -52,13 +55,15 @@ export default function ClientDetail() {
       listClientAttempts(clientId),
       getClientIntake(clientId),
       listClientProgram(clientId),
+      listClientSoreness(clientId),
     ])
-      .then(([c, m, a, i, p]) => {
+      .then(([c, m, a, i, p, s]) => {
         setClient(c);
         setMovements(m);
         setAttempts(a);
         setIntake(i);
         setProgram(p);
+        setSoreness(s);
       })
       .catch((e) => setError(e.message));
   }, [clientId, profile]);
@@ -143,6 +148,30 @@ export default function ClientDetail() {
             {intake.phone && (<div><dt className="text-slate-400">Phone</dt><dd className="text-slate-200">{intake.phone}</dd></div>)}
             {intake.emergency_contact && (<div><dt className="text-slate-400">Emergency contact</dt><dd className="text-slate-200">{intake.emergency_contact}</dd></div>)}
           </dl>
+        </section>
+      )}
+
+      {soreness.length > 0 && (
+        <section className="card mb-4">
+          <h3 className="mb-2 font-semibold">Recent soreness</h3>
+          <ul className="space-y-2">
+            {soreness.slice(0, 10).map((r) => (
+              <li key={r.id} className="flex items-start justify-between gap-3 rounded-lg bg-slate-900/70 p-3">
+                <span className="min-w-0">
+                  <span className="flex flex-wrap gap-1">
+                    {focusAreaLabels(r.regions).map((l) => (
+                      <span key={l} className="chip border border-amber-800 bg-amber-950/40 text-xs text-amber-200">{l}</span>
+                    ))}
+                  </span>
+                  {r.note && <span className="mt-1 block text-sm text-slate-300">“{r.note}”</span>}
+                </span>
+                <span className="shrink-0 text-right text-xs text-slate-400">
+                  {r.severity && <span className="block capitalize text-slate-300">{r.severity}</span>}
+                  {relativeTime(r.created_at)}
+                </span>
+              </li>
+            ))}
+          </ul>
         </section>
       )}
 

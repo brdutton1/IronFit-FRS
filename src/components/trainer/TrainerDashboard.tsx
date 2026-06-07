@@ -6,15 +6,21 @@ import { useAuth } from '@/lib/session';
 import { listClients } from '@/lib/supabase/clients';
 import { listTrainerMovements } from '@/lib/supabase/movements';
 import { listTrainerAttempts } from '@/lib/supabase/attempts';
+import { listTrainerSoreness } from '@/lib/supabase/soreness';
 import { attentionSignals, groupByClient, type AttentionSignals, type MovementMeta } from '@/lib/metrics';
 import { relativeTime } from '@/lib/time';
 import type { Profile } from '@/types/profile';
 import type { Movement } from '@/types/movement';
 import type { ClientAttempt } from '@/types/attempt';
+import type { SorenessReport } from '@/types/soreness';
+
+const SORENESS_WINDOW_MS = 7 * 24 * 60 * 60 * 1000;
 
 interface Row {
   client: Profile;
   signals: AttentionSignals;
+  /** Soreness reports from this client in the last 7 days. */
+  recentSoreness: number;
 }
 
 export default function TrainerDashboard() {
@@ -22,16 +28,23 @@ export default function TrainerDashboard() {
   const [clients, setClients] = useState<Profile[] | null>(null);
   const [movements, setMovements] = useState<Movement[]>([]);
   const [attempts, setAttempts] = useState<ClientAttempt[]>([]);
+  const [soreness, setSoreness] = useState<SorenessReport[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [dismissedWelcome, setDismissedWelcome] = useState(false);
 
   useEffect(() => {
     if (!profile) return;
-    Promise.all([listClients(profile.user_id), listTrainerMovements(profile.user_id), listTrainerAttempts()])
-      .then(([c, m, a]) => {
+    Promise.all([
+      listClients(profile.user_id),
+      listTrainerMovements(profile.user_id),
+      listTrainerAttempts(),
+      listTrainerSoreness(),
+    ])
+      .then(([c, m, a, s]) => {
         setClients(c);
         setMovements(m);
         setAttempts(a);
+        setSoreness(s);
       })
       .catch((e) => setError(e.message));
   }, [profile]);
@@ -44,18 +57,28 @@ export default function TrainerDashboard() {
       compensation_patterns: m.compensation_patterns,
     }));
     const byClient = groupByClient(attempts);
+    const cutoff = Date.now() - SORENESS_WINDOW_MS;
+    const sorenessByClient = new Map<string, number>();
+    for (const r of soreness) {
+      if (new Date(r.created_at).getTime() >= cutoff) {
+        sorenessByClient.set(r.client_id, (sorenessByClient.get(r.client_id) ?? 0) + 1);
+      }
+    }
     const out = clients.map((client) => ({
       client,
       signals: attentionSignals(client.user_id, byClient.get(client.user_id) ?? [], meta),
+      recentSoreness: sorenessByClient.get(client.user_id) ?? 0,
     }));
-    // Needs-attention first, then most recently active.
+    // Anything needing attention (low ROM, inactive, or recent soreness) first,
+    // then most recently active.
+    const needs = (r: Row) => r.signals.needsAttention || r.recentSoreness > 0;
     return out.sort((a, b) => {
-      if (a.signals.needsAttention !== b.signals.needsAttention) return a.signals.needsAttention ? -1 : 1;
+      if (needs(a) !== needs(b)) return needs(a) ? -1 : 1;
       return (b.signals.lastActiveAt ?? '').localeCompare(a.signals.lastActiveAt ?? '');
     });
-  }, [clients, movements, attempts]);
+  }, [clients, movements, attempts, soreness]);
 
-  const attentionCount = rows.filter((r) => r.signals.needsAttention).length;
+  const attentionCount = rows.filter((r) => r.signals.needsAttention || r.recentSoreness > 0).length;
 
   // First login: walk the trainer through the basics + their intake link.
   if (profile && !profile.onboarded_at && !dismissedWelcome) {
@@ -86,12 +109,12 @@ export default function TrainerDashboard() {
       )}
 
       <ul className="flex flex-col gap-3">
-        {rows.map(({ client, signals }) => (
+        {rows.map(({ client, signals, recentSoreness }) => (
           <li key={client.user_id}>
             <Link
               to={`/trainer/clients/${client.user_id}`}
               className={`card flex items-center justify-between gap-3 hover:border-sky-700 ${
-                signals.needsAttention ? 'border-amber-800/70' : ''
+                signals.needsAttention || recentSoreness > 0 ? 'border-amber-800/70' : ''
               }`}
             >
               <span className="min-w-0">
@@ -101,7 +124,7 @@ export default function TrainerDashboard() {
                     ? 'No sessions yet'
                     : `Last active ${relativeTime(signals.lastActiveAt)} · ${signals.attemptCount} session${signals.attemptCount === 1 ? '' : 's'}`}
                 </span>
-                <SignalChips signals={signals} />
+                <SignalChips signals={signals} extra={recentSoreness > 0 ? [`Sore ×${recentSoreness} (7d)`] : []} />
               </span>
               <span aria-hidden className="shrink-0 text-slate-500">›</span>
             </Link>
@@ -112,12 +135,13 @@ export default function TrainerDashboard() {
   );
 }
 
-export function SignalChips({ signals }: { signals: AttentionSignals }) {
+export function SignalChips({ signals, extra = [] }: { signals: AttentionSignals; extra?: string[] }) {
   const chips: string[] = [];
   if (signals.recurringComp) chips.push(`Recurring: ${signals.recurringComp.label}`);
   if (signals.stalled) chips.push(signals.stalled.direction === 'declining' ? 'ROM declining' : 'ROM below target');
   if (signals.inactive) chips.push(`Inactive ${signals.inactiveDays}d`);
   if (signals.lowConfidence) chips.push('Low camera confidence');
+  chips.push(...extra);
   if (chips.length === 0) {
     if (signals.attemptCount === 0) return null;
     return <span className="mt-2 inline-block chip border border-emerald-800 text-xs text-emerald-300">On track</span>;

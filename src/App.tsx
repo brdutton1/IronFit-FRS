@@ -11,6 +11,7 @@ import VideoEditor from '@/components/trainer/VideoEditor';
 import ClientDetail from '@/components/trainer/ClientDetail';
 import IntakeForm from '@/components/intake/IntakeForm';
 import ClientDashboard from '@/components/client/ClientDashboard';
+import StretchFinder from '@/components/client/StretchFinder';
 import ClientSettings from '@/components/client/ClientSettings';
 import ProgressDashboard from '@/components/client/ProgressDashboard';
 import MovementDetail from '@/components/client/MovementDetail';
@@ -59,6 +60,7 @@ export default function App() {
 
       {/* Client */}
       <Route path="/client" element={<AuthGate role="client"><ClientDashboard /></AuthGate>} />
+      <Route path="/client/stretch" element={<AuthGate role="client"><StretchFinder /></AuthGate>} />
       <Route path="/client/settings" element={<AuthGate role="client"><ClientSettings /></AuthGate>} />
       <Route path="/client/progress" element={<AuthGate role="client"><ProgressDashboard /></AuthGate>} />
       <Route path="/client/messages" element={<AuthGate role="client"><ClientChatScreen /></AuthGate>} />
