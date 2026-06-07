@@ -16,6 +16,8 @@ export interface Profile {
   avatar_url: string | null;
   /** Set the first time the user dismisses their welcome screen. */
   onboarded_at: string | null;
+  /** Platform owner (super-admin). An added flag on top of the trainer role. */
+  is_owner: boolean;
   created_at: string;
 }
 

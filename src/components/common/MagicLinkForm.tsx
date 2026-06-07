@@ -1,4 +1,5 @@
 import { useState, type FormEvent } from 'react';
+import PasswordInput from '@/components/common/PasswordInput';
 import { signInWithPassword, signUpWithPassword } from '@/lib/supabase/auth';
 import { useAuth } from '@/lib/session';
 
@@ -80,13 +81,11 @@ export default function MagicLinkForm() {
           <label htmlFor="password" className="field-label">
             Password
           </label>
-          <input
+          <PasswordInput
             id="password"
-            type="password"
             required
             minLength={6}
             autoComplete={mode === 'signin' ? 'current-password' : 'new-password'}
-            className="field-input"
             placeholder={mode === 'signup' ? 'At least 6 characters' : 'Your password'}
             value={password}
             onChange={(e) => setPassword(e.target.value)}

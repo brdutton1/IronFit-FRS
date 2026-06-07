@@ -1,6 +1,7 @@
 import { useEffect, useState, type FormEvent } from 'react';
 import AppShell from '@/components/common/AppShell';
 import InviteLink from '@/components/common/InviteLink';
+import ChangePasswordCard from '@/components/common/ChangePasswordCard';
 import { updateOwnProfile } from '@/lib/supabase/auth';
 import { useAuth } from '@/lib/session';
 
@@ -86,6 +87,10 @@ export default function TrainerSettings() {
           {busy ? 'Saving…' : 'Save'}
         </button>
       </form>
+
+      <div className="mt-5">
+        <ChangePasswordCard />
+      </div>
     </AppShell>
   );
 }

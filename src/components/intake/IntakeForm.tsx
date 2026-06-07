@@ -3,6 +3,7 @@ import { useNavigate, useParams } from 'react-router-dom';
 import { signUpClient } from '@/lib/supabase/auth';
 import { saveIntake, trainerByCode, type TrainerRef } from '@/lib/supabase/intake';
 import { FOCUS_AREAS } from '@/lib/intakeOptions';
+import PasswordInput from '@/components/common/PasswordInput';
 
 const EXPERIENCE_OPTIONS = [
   'New to FRS / mobility training',
@@ -152,7 +153,7 @@ export default function IntakeForm() {
           </div>
           <div>
             <label htmlFor="password" className="field-label">Create a password</label>
-            <input id="password" type="password" required minLength={6} autoComplete="new-password" className="field-input"
+            <PasswordInput id="password" required minLength={6} autoComplete="new-password"
               placeholder="At least 6 characters" value={password} onChange={(e) => setPassword(e.target.value)} />
           </div>
           <div>

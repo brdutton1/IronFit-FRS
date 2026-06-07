@@ -49,6 +49,26 @@ export async function signUpClient(
   };
 }
 
+/**
+ * Change the signed-in user's own password. Re-verifies the current password
+ * first (Supabase lets a logged-in user set a new password without it, so we
+ * require it ourselves for safety) then updates.
+ */
+export async function changePassword(
+  currentPassword: string,
+  newPassword: string,
+): Promise<{ error: string | null }> {
+  const { data } = await supabase.auth.getUser();
+  const email = data.user?.email;
+  if (!email) return { error: 'You are signed out. Sign in again and retry.' };
+
+  const { error: verifyErr } = await supabase.auth.signInWithPassword({ email, password: currentPassword });
+  if (verifyErr) return { error: 'Current password is incorrect.' };
+
+  const { error } = await supabase.auth.updateUser({ password: newPassword });
+  return { error: error?.message ?? null };
+}
+
 export async function signOut(): Promise<void> {
   await supabase.auth.signOut();
 }

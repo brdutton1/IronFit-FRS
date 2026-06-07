@@ -14,22 +14,32 @@ interface Tab {
   icon: ReactNode;
 }
 
+// Trainers see their own practice only. The Control Center tab is owner-only and
+// is spliced in just before Settings (see `tabsFor`).
 const TRAINER_TABS: Tab[] = [
   { to: '/trainer', label: 'Clients', icon: <IconUsers /> },
-  { to: '/overview', label: 'Overview', icon: <IconGrid /> },
   { to: '/trainer/movements', label: 'Movements', icon: <IconLibrary /> },
   { to: '/trainer/messages', label: 'Messages', icon: <IconChat /> },
   { to: '/trainer/settings', label: 'Settings', icon: <IconGear /> },
 ];
+const OWNER_TAB: Tab = { to: '/control', label: 'Control', icon: <IconGrid /> };
 const CLIENT_TABS: Tab[] = [
   { to: '/client', label: 'Train', icon: <IconLibrary /> },
   { to: '/client/progress', label: 'Progress', icon: <IconChart /> },
   { to: '/client/messages', label: 'Messages', icon: <IconChat /> },
+  { to: '/client/settings', label: 'Settings', icon: <IconGear /> },
 ];
+
+function tabsFor(role: string | undefined, isOwner: boolean): Tab[] {
+  if (role !== 'trainer') return CLIENT_TABS;
+  if (!isOwner) return TRAINER_TABS;
+  // Owner: trainer tabs plus the Control Center, kept before Settings.
+  return [...TRAINER_TABS.slice(0, -1), OWNER_TAB, TRAINER_TABS[TRAINER_TABS.length - 1]];
+}
 
 export default function AppShell({ children, title }: { children: ReactNode; title?: string }) {
   const { session, profile } = useAuth();
-  const tabs = profile?.role === 'trainer' ? TRAINER_TABS : CLIENT_TABS;
+  const tabs = tabsFor(profile?.role, profile?.is_owner ?? false);
   const home = profile?.role === 'trainer' ? '/trainer' : '/client';
 
   return (

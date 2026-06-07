@@ -3,12 +3,13 @@ import AuthGate from '@/components/common/AuthGate';
 import MagicLinkForm from '@/components/common/MagicLinkForm';
 import TrainerDashboard from '@/components/trainer/TrainerDashboard';
 import TrainerSettings from '@/components/trainer/TrainerSettings';
-import OverviewDashboard from '@/components/trainer/OverviewDashboard';
+import ControlCenter from '@/components/owner/ControlCenter';
 import MovementsLibrary from '@/components/trainer/MovementsLibrary';
 import MovementEditor from '@/components/trainer/MovementEditor';
 import ClientDetail from '@/components/trainer/ClientDetail';
 import IntakeForm from '@/components/intake/IntakeForm';
 import ClientDashboard from '@/components/client/ClientDashboard';
+import ClientSettings from '@/components/client/ClientSettings';
 import ProgressDashboard from '@/components/client/ProgressDashboard';
 import MovementDetail from '@/components/client/MovementDetail';
 import PerformanceScreen from '@/components/client/PerformanceScreen';
@@ -43,7 +44,7 @@ export default function App() {
       {/* Trainer */}
       <Route path="/trainer" element={<AuthGate role="trainer"><TrainerDashboard /></AuthGate>} />
       <Route path="/trainer/settings" element={<AuthGate role="trainer"><TrainerSettings /></AuthGate>} />
-      <Route path="/overview" element={<AuthGate role="trainer"><OverviewDashboard /></AuthGate>} />
+      <Route path="/control" element={<AuthGate role="trainer" owner><ControlCenter /></AuthGate>} />
       <Route path="/trainer/clients/:clientId" element={<AuthGate role="trainer"><ClientDetail /></AuthGate>} />
       <Route path="/trainer/movements" element={<AuthGate role="trainer"><MovementsLibrary /></AuthGate>} />
       <Route path="/trainer/movements/new" element={<AuthGate role="trainer"><MovementEditor /></AuthGate>} />
@@ -53,6 +54,7 @@ export default function App() {
 
       {/* Client */}
       <Route path="/client" element={<AuthGate role="client"><ClientDashboard /></AuthGate>} />
+      <Route path="/client/settings" element={<AuthGate role="client"><ClientSettings /></AuthGate>} />
       <Route path="/client/progress" element={<AuthGate role="client"><ProgressDashboard /></AuthGate>} />
       <Route path="/client/messages" element={<AuthGate role="client"><ClientChatScreen /></AuthGate>} />
       <Route path="/client/movements/:id" element={<AuthGate role="client"><MovementDetail /></AuthGate>} />
