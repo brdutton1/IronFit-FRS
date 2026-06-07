@@ -7,6 +7,7 @@ import {
   listUsers,
   setRole,
   setOwner,
+  setAiMirror,
   transferClient,
   resetPassword,
   type AdminUser,
@@ -207,6 +208,22 @@ function UserRow({
             <option value="client">client</option>
           </select>
         </label>
+
+        {/* AI Mirror access (clients only — client-pays premium) */}
+        {user.role === 'client' && (
+          <button
+            type="button"
+            className={`rounded-md border px-2 py-1 disabled:opacity-50 ${
+              user.ai_mirror_enabled
+                ? 'border-sky-700 bg-sky-950/40 text-sky-200'
+                : 'border-slate-700 text-slate-400 hover:text-slate-100'
+            }`}
+            disabled={busy}
+            onClick={() => void run(setAiMirror(user.user_id, !user.ai_mirror_enabled))}
+          >
+            {user.ai_mirror_enabled ? 'AI Mirror: on' : 'AI Mirror: off'}
+          </button>
+        )}
 
         {/* Transfer (clients only) */}
         {user.role === 'client' && (

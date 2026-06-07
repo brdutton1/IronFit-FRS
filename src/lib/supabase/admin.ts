@@ -9,6 +9,7 @@ export interface AdminUser {
   display_name: string | null;
   trainer_id: string | null;
   is_owner: boolean;
+  ai_mirror_enabled: boolean;
   created_at: string;
 }
 
@@ -28,6 +29,12 @@ export async function setRole(userId: string, role: Role): Promise<{ error: stri
 /** Owner-only: grant or revoke the platform-owner flag. */
 export async function setOwner(userId: string, value: boolean): Promise<{ error: string | null }> {
   const { error } = await supabase.from('profiles').update({ is_owner: value }).eq('user_id', userId);
+  return { error: error?.message ?? null };
+}
+
+/** Owner-only: grant or revoke a client's AI Mirror access (client-pays premium). */
+export async function setAiMirror(userId: string, value: boolean): Promise<{ error: string | null }> {
+  const { error } = await supabase.from('profiles').update({ ai_mirror_enabled: value }).eq('user_id', userId);
   return { error: error?.message ?? null };
 }
 

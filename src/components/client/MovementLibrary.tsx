@@ -2,7 +2,9 @@ import { useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import type { JointName, Movement, MovementType } from '@/types/movement';
 import type { ProgramAssignment } from '@/types/program';
+import type { Video } from '@/types/video';
 import { focusMovements } from '@/lib/focus';
+import { KIND_LABEL, movementKind } from '@/lib/movementKind';
 import { ReferenceThumbnail } from './ReferenceThumbnail';
 
 const JOINT_CHIPS: { label: string; joints: JointName[] }[] = [
@@ -25,12 +27,15 @@ const TYPE_CHIPS: { label: string; value: MovementType }[] = [
 export default function MovementLibrary({
   movements,
   program = [],
+  videosById,
 }: {
   movements: Movement[];
   program?: ProgramAssignment[];
+  videosById?: Map<string, Video>;
 }) {
   const [jointFilter, setJointFilter] = useState<string | null>(null);
   const [typeFilter, setTypeFilter] = useState<MovementType | null>(null);
+  const linkedVideo = (m: Movement) => (m.video_id ? videosById?.get(m.video_id) : undefined);
 
   const focus = useMemo(() => focusMovements(movements, program), [movements, program]);
 
@@ -56,10 +61,11 @@ export default function MovementLibrary({
                   to={`/client/movements/${m.id}`}
                   className="group block overflow-hidden rounded-2xl border border-sky-700 bg-sky-950/20 hover:border-sky-500"
                 >
-                  <ReferenceThumbnail movement={m} />
+                  <ReferenceThumbnail movement={m} linkedVideo={linkedVideo(m)} />
                   <span className="block p-3">
                     <span className="block truncate text-sm font-semibold">{m.name}</span>
                     <span className="block text-xs text-slate-400">{m.movement_type.toUpperCase()} · {m.side}</span>
+                    <KindBadge movement={m} />
                     {note && <span className="mt-1 block text-xs text-sky-200">“{note}”</span>}
                   </span>
                 </Link>
@@ -103,10 +109,11 @@ export default function MovementLibrary({
           {filtered.map((m) => (
             <li key={m.id}>
               <Link to={`/client/movements/${m.id}`} className="group block overflow-hidden rounded-2xl border border-slate-800 hover:border-sky-700">
-                <ReferenceThumbnail movement={m} />
+                <ReferenceThumbnail movement={m} linkedVideo={linkedVideo(m)} />
                 <span className="block p-3">
                   <span className="block truncate text-sm font-semibold">{m.name}</span>
                   <span className="block text-xs text-slate-400">{m.movement_type.toUpperCase()} · {m.side}</span>
+                  <KindBadge movement={m} />
                 </span>
               </Link>
             </li>
@@ -114,5 +121,18 @@ export default function MovementLibrary({
         </ul>
       )}
     </div>
+  );
+}
+
+function KindBadge({ movement }: { movement: Movement }) {
+  const kind = movementKind(movement);
+  return (
+    <span
+      className={`mt-1 inline-block chip border text-[10px] ${
+        kind === 'coached' ? 'border-sky-800 bg-sky-950/40 text-sky-200' : 'border-slate-700 text-slate-400'
+      }`}
+    >
+      {KIND_LABEL[kind]}
+    </span>
   );
 }

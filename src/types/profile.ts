@@ -18,6 +18,8 @@ export interface Profile {
   onboarded_at: string | null;
   /** Platform owner (super-admin). An added flag on top of the trainer role. */
   is_owner: boolean;
+  /** Client's AI Mirror access (client-pays premium). Default true until billing exists. */
+  ai_mirror_enabled: boolean;
   created_at: string;
 }
 

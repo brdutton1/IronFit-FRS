@@ -20,6 +20,7 @@ import { primaryAngleFor, rotationLimitedMap } from '@/lib/movementOptions';
 import { worstConfidence } from '@/lib/pose/confidence';
 import { getMovement } from '@/lib/supabase/movements';
 import { recordAttempt } from '@/lib/supabase/attempts';
+import { canUseAIMirror } from '@/lib/entitlements';
 import { addAttempt } from '@/lib/localHistory';
 import { useAuth } from '@/lib/session';
 import type { Movement } from '@/types/movement';
@@ -64,13 +65,18 @@ export default function PerformanceScreen() {
 
   // ── Load movement + camera + model ──
   useEffect(() => {
-    if (!id) return;
+    if (!id || !profile) return;
     let stream: MediaStream | null = null;
     (async () => {
       try {
         const m = await getMovement(id);
         if (!m) throw new Error('Movement not found.');
         if (!m.reference_dataset) throw new Error('This movement has no reference yet.');
+        // AI Mirror is the premium (client-paid) surface — guard the route.
+        if (!canUseAIMirror(profile)) {
+          navigate(`/client/movements/${id}`, { replace: true });
+          return;
+        }
         setMovement(m);
 
         stream = await navigator.mediaDevices.getUserMedia({
@@ -99,7 +105,7 @@ export default function PerformanceScreen() {
       detectorRef.current = null;
       stream?.getTracks().forEach((t) => t.stop());
     };
-  }, [id]);
+  }, [id, profile, navigate]);
 
   // Pause cleanly on tab hide / phone call (resume when visible again).
   useEffect(() => {

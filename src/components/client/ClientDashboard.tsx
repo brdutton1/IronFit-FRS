@@ -4,16 +4,19 @@ import MovementLibrary from './MovementLibrary';
 import ClientWelcome from './ClientWelcome';
 import { useAuth } from '@/lib/session';
 import { listLiveMovements } from '@/lib/supabase/movements';
+import { listClientVideos } from '@/lib/supabase/videos';
 import { listClientProgram } from '@/lib/supabase/programs';
 import { mostRecentAttempt } from '@/lib/localHistory';
 import type { Movement } from '@/types/movement';
 import type { ProgramAssignment } from '@/types/program';
 import type { LocalAttempt } from '@/types/attempt';
+import type { Video } from '@/types/video';
 
 export default function ClientDashboard() {
   const { profile } = useAuth();
   const [movements, setMovements] = useState<Movement[] | null>(null);
   const [program, setProgram] = useState<ProgramAssignment[]>([]);
+  const [videosById, setVideosById] = useState<Map<string, Video>>(new Map());
   const [recent, setRecent] = useState<LocalAttempt | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [dismissedWelcome, setDismissedWelcome] = useState(false);
@@ -21,10 +24,11 @@ export default function ClientDashboard() {
   useEffect(() => {
     if (!profile) return;
     setRecent(mostRecentAttempt());
-    Promise.all([listLiveMovements(), listClientProgram(profile.user_id)])
-      .then(([m, p]) => {
+    Promise.all([listLiveMovements(), listClientProgram(profile.user_id), listClientVideos()])
+      .then(([m, p, v]) => {
         setMovements(m);
         setProgram(p);
+        setVideosById(new Map(v.map((vid) => [vid.id, vid])));
       })
       .catch((e) => setError(e.message));
   }, [profile]);
@@ -57,7 +61,7 @@ export default function ClientDashboard() {
       {movements === null ? (
         <p className="text-slate-400">Loading movements…</p>
       ) : (
-        <MovementLibrary movements={movements} program={program} />
+        <MovementLibrary movements={movements} program={program} videosById={videosById} />
       )}
     </AppShell>
   );

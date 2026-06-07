@@ -22,6 +22,19 @@ export async function recordAttempt(clientId: string, attempt: NewAttempt): Prom
   return data as ClientAttempt;
 }
 
+/** Log a "watch & follow" completion — a lightweight activity marker with no
+ * pose/ROM data (follow-along movements aren't AI-scored). Keeps the trainer's
+ * "last active" honest without polluting ROM trends (metrics skip null ROM). */
+export async function logFollowAlong(clientId: string, movementId: string): Promise<ClientAttempt> {
+  const { data, error } = await supabase
+    .from(TABLE)
+    .insert({ client_id: clientId, movement_id: movementId, rom_achieved_pct: null, compensation_flags: [], confidence: null })
+    .select('*')
+    .single();
+  if (error) throw new Error(error.message);
+  return data as ClientAttempt;
+}
+
 /** A client's own attempts for a movement (most recent first). */
 export async function listClientAttempts(
   clientId: string,

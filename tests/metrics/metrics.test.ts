@@ -35,6 +35,23 @@ const lumbarPattern: CompensationPattern = {
 const movement: MovementMeta = { id: 'm1', name: 'Shoulder CAR', compensation_patterns: [lumbarPattern] };
 const movementsById = { m1: movement };
 
+describe('follow-along (null ROM) logs', () => {
+  it('count as activity but are excluded from ROM trends and stalled signals', () => {
+    const attempts = [
+      attempt({ rom_achieved_pct: null, confidence: null, attempted_at: daysAgo(0) }),
+      attempt({ rom_achieved_pct: null, confidence: null, attempted_at: daysAgo(1) }),
+    ];
+    // No ROM trend produced from null-only attempts…
+    expect(romTrendByMovement(attempts, movementsById)).toHaveLength(0);
+    // …but they still register as recent activity (no false "declining"/"inactive").
+    const s = attentionSignals('c1', attempts, [movement], NOW);
+    expect(s.attemptCount).toBe(2);
+    expect(s.lastActiveAt).toBe(daysAgo(0));
+    expect(s.stalled).toBeNull();
+    expect(s.needsAttention).toBe(false);
+  });
+});
+
 describe('romTrendByMovement', () => {
   it('detects improving ROM', () => {
     const attempts = [50, 55, 60, 70, 80].map((rom, i) =>

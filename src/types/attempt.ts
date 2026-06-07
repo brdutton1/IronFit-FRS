@@ -4,7 +4,8 @@ export interface ClientAttempt {
   id: string;
   client_id: string;
   movement_id: string;
-  rom_achieved_pct: number;
+  /** Null for a "watch & follow" log (no AI scoring). */
+  rom_achieved_pct: number | null;
   compensation_flags: string[];
   confidence: Confidence | null;
   attempted_at: string;
