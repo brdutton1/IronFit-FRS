@@ -8,6 +8,8 @@ import MovementsLibrary from '@/components/trainer/MovementsLibrary';
 import MovementEditor from '@/components/trainer/MovementEditor';
 import VideoLibrary from '@/components/trainer/VideoLibrary';
 import VideoEditor from '@/components/trainer/VideoEditor';
+import StretchesLibrary from '@/components/trainer/StretchesLibrary';
+import StretchEditor from '@/components/trainer/StretchEditor';
 import ClientDetail from '@/components/trainer/ClientDetail';
 import IntakeForm from '@/components/intake/IntakeForm';
 import ClientDashboard from '@/components/client/ClientDashboard';
@@ -55,6 +57,9 @@ export default function App() {
       <Route path="/trainer/videos" element={<AuthGate role="trainer"><VideoLibrary /></AuthGate>} />
       <Route path="/trainer/videos/new" element={<AuthGate role="trainer"><VideoEditor /></AuthGate>} />
       <Route path="/trainer/videos/:id" element={<AuthGate role="trainer"><VideoEditor /></AuthGate>} />
+      <Route path="/trainer/stretches" element={<AuthGate role="trainer"><StretchesLibrary /></AuthGate>} />
+      <Route path="/trainer/stretches/new" element={<AuthGate role="trainer"><StretchEditor /></AuthGate>} />
+      <Route path="/trainer/stretches/:id" element={<AuthGate role="trainer"><StretchEditor /></AuthGate>} />
       <Route path="/trainer/messages" element={<AuthGate role="trainer"><MessagesScreen /></AuthGate>} />
       <Route path="/trainer/messages/:partnerId" element={<AuthGate role="trainer"><ChatThreadScreen /></AuthGate>} />
 

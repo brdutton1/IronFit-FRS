@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import AppShell from '@/components/common/AppShell';
+import LibraryNav from './LibraryNav';
 import MovementList from './MovementList';
 import { useAuth } from '@/lib/session';
 import { listTrainerMovements } from '@/lib/supabase/movements';
@@ -24,6 +25,7 @@ export default function MovementsLibrary() {
 
   return (
     <AppShell title="Movements">
+      <LibraryNav />
       <div className="mb-5 flex items-center justify-between gap-3">
         <div>
           <h2 className="text-xl font-bold">Movement library</h2>
